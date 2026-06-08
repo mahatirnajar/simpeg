@@ -1,0 +1,78 @@
+{% extends 'dosen/base.html' %}
+{% block title %}{{ title }} - SIMPEG{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  {% if tendik %}<a href="{% url 'tendik_detail' tendik.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali ke Profil</a>
+  {% else %}<a href="{% url 'dashboard_tendik' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>{% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header fw-semibold">{{ title }}</div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+
+        <div class="col-12"><h6 class="fw-bold text-primary border-bottom pb-2 mb-2">Identitas Tendik</h6></div>
+        <div class="col-md-4"><label class="form-label">{{ form.nama_lengkap.label }}</label>{{ form.nama_lengkap }}</div>
+        <div class="col-md-4"><label class="form-label">{{ form.nama_terang.label }}</label>{{ form.nama_terang }}</div>
+        <div class="col-md-2"><label class="form-label">{{ form.gelar_depan.label }}</label>{{ form.gelar_depan }}</div>
+        <div class="col-md-2"><label class="form-label">{{ form.gelar_belakang.label }}</label>{{ form.gelar_belakang }}</div>
+
+        <div class="col-md-3"><label class="form-label">{{ form.nidn.label }}</label>{{ form.nidn }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.nuptk.label }}</label>{{ form.nuptk }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.nip.label }}</label>{{ form.nip }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.no_ktp.label }}</label>{{ form.no_ktp }}</div>
+
+        <div class="col-md-3"><label class="form-label">{{ form.karpeg.label }}</label>{{ form.karpeg }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.nira.label }}</label>{{ form.nira }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.status.label }}</label>{{ form.status }}</div>
+
+        <div class="col-12 mt-2"><h6 class="fw-bold text-primary border-bottom pb-2 mb-2">Data Pribadi</h6></div>
+        <div class="col-md-2"><label class="form-label">{{ form.jenis_kelamin.label }}</label>{{ form.jenis_kelamin }}</div>
+        <div class="col-md-2"><label class="form-label">{{ form.agama.label }}</label>{{ form.agama }}</div>
+        <div class="col-md-4"><label class="form-label">{{ form.tempat_lahir.label }}</label>{{ form.tempat_lahir }}</div>
+        <div class="col-md-4"><label class="form-label">{{ form.tanggal_lahir.label }}</label>{{ form.tanggal_lahir }}</div>
+
+        <div class="col-12 mt-2"><h6 class="fw-bold text-primary border-bottom pb-2 mb-2">Unit Kerja</h6></div>
+        <div class="col-md-4">
+          <label class="form-label">{{ form.unit_kerja.label }}</label>
+          {{ form.unit_kerja }}
+          <small class="text-muted">Isi jika tendik di unit non-fakultas (Biro, Bagian, UPT, dll)</small>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">{{ form.fakultas.label }}</label>
+          {{ form.fakultas }}
+          <small class="text-muted">Isi jika tendik ditempatkan di Fakultas</small>
+        </div>
+        <div class="col-md-4"><label class="form-label">{{ form.bagian.label }}</label>{{ form.bagian }}</div>
+
+        <div class="col-12 mt-2"><h6 class="fw-bold text-primary border-bottom pb-2 mb-2">Kepegawaian & Kompetensi</h6></div>
+        <div class="col-md-3"><label class="form-label">{{ form.tmt_cpns.label }}</label>{{ form.tmt_cpns }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.tmt_pns.label }}</label>{{ form.tmt_pns }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.tingkat_ijazah_bkn.label }}</label>{{ form.tingkat_ijazah_bkn }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.tingkat_ijazah_borang.label }}</label>{{ form.tingkat_ijazah_borang }}</div>
+        <div class="col-md-6"><label class="form-label">{{ form.bidang_keahlian.label }}</label>{{ form.bidang_keahlian }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.usia_pensiun.label }}</label>{{ form.usia_pensiun }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.tahun_pensiun.label }}</label>{{ form.tahun_pensiun }}</div>
+
+        {% if form.errors %}
+        <div class="col-12">
+          <div class="alert alert-danger"><ul class="mb-0">
+            {% for field in form %}{% for e in field.errors %}<li>{{ field.label }}: {{ e }}</li>{% endfor %}{% endfor %}
+          </ul></div>
+        </div>
+        {% endif %}
+
+        <div class="col-12 mt-2">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Simpan</button>
+          {% if tendik %}<a href="{% url 'tendik_detail' tendik.pk %}" class="btn btn-outline-secondary ms-2">Batal</a>
+          {% else %}<a href="{% url 'dashboard_tendik' %}" class="btn btn-outline-secondary ms-2">Batal</a>{% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

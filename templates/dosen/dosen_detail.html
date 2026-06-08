@@ -1,0 +1,244 @@
+{% extends 'dosen/base.html' %}
+{% block title %}{{ dosen.nama_lengkap }} - SIMPEG{% endblock %}
+{% block page_title %}Profil Dosen{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <div>
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-arrow-left"></i> Kembali</a>
+    <span class="fw-semibold">{{ dosen.nama_lengkap }}</span>
+  </div>
+  {% if is_admin %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'dosen_edit' dosen.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i> Edit Data Pokok</a>
+    <a href="{% url 'dosen_delete' dosen.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Hapus</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <!-- Identitas -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-person-badge"></i> Identitas Dosen
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div style="width:64px;height:64px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;color:#1a5c2a">
+            {{ dosen.nama_terang|first|upper }}
+          </div>
+          <div>
+            <h5 class="mb-0 fw-bold">{{ dosen.nama_lengkap }}</h5>
+            <div class="text-muted" style="font-size:0.8rem">{{ dosen.fakultas.nama|default:"Fakultas belum ditentukan" }}</div>
+            <span class="badge {% if dosen.status == 'PNS' %}bg-success{% elif dosen.status == 'CPNS' %}bg-warning text-dark{% else %}bg-secondary{% endif %} mt-1">{{ dosen.status }}</span>
+          </div>
+        </div>
+        <table class="table table-sm table-borderless mb-0">
+          <tr><th style="width:35%;font-size:0.78rem;color:#6b7280">NIP</th><td>{{ dosen.nip|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">NIDN</th><td>{{ dosen.nidn|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">NUPTK</th><td>{{ dosen.nuptk|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">No. KTP</th><td>{{ dosen.no_ktp|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">KARPEG</th><td>{{ dosen.karpeg|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">NIRA</th><td>{{ dosen.nira|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">No. Reg. Serdos</th><td>{{ dosen.no_reg_serdos|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Jenis Kelamin</th><td>{{ dosen.get_jenis_kelamin_display }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Agama</th><td>{{ dosen.agama|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Tempat Lahir</th><td>{{ dosen.tempat_lahir|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Tanggal Lahir</th><td>{{ dosen.tanggal_lahir|date:"d-m-Y"|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Usia Saat Ini</th><td>{{ dosen.usia_saat_ini|default:"-" }} tahun</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Tahun Pensiun</th><td><strong>{{ dosen.tahun_pensiun|default:"-" }}</strong></td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">TMT CPNS</th><td>{{ dosen.tmt_cpns|date:"d/m/Y"|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">TMT PNS</th><td>{{ dosen.tmt_pns|date:"d/m/Y"|default:"-" }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kepangkatan & Jabatan Terakhir -->
+  <div class="col-lg-7">
+    <div class="row g-3">
+      <!-- Kepangkatan Terakhir -->
+      <div class="col-12">
+        {% with kp=dosen.kepangkatan_terakhir %}
+        <div class="card" style="border-left: 4px solid #c8a227">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-award"></i> Kepangkatan Terakhir</span>
+            {% if is_admin %}<a href="{% url 'kepangkatan_add' dosen.pk %}" class="btn btn-xs btn-outline-success"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+          </div>
+          <div class="card-body">
+            {% if kp %}
+            <div class="row g-2">
+              <div class="col-4"><div style="font-size:0.72rem;color:#6b7280">Pangkat</div><div class="fw-semibold">{{ kp.pangkat }}</div></div>
+              <div class="col-2"><div style="font-size:0.72rem;color:#6b7280">Golongan</div><div><span class="golongan-badge gol-{{ kp.golongan|lower|cut:'/' }}">{{ kp.golongan }}</span></div></div>
+              <div class="col-3"><div style="font-size:0.72rem;color:#6b7280">TMT</div><div>{{ kp.tmt|date:"d/m/Y" }}</div></div>
+            </div>
+            {% else %}<p class="text-muted mb-0">Belum ada data kepangkatan.</p>{% endif %}
+          </div>
+        </div>
+        {% endwith %}
+      </div>
+      <!-- Jabatan Fungsional Terakhir -->
+      <div class="col-12">
+        {% with jf=dosen.jabatan_fungsional_terakhir %}
+        <div class="card" style="border-left: 4px solid #7c3aed">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-briefcase"></i> Jabatan Fungsional Terakhir</span>
+            {% if is_admin %}<a href="{% url 'jabatan_add' dosen.pk %}" class="btn btn-xs btn-outline-success"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+          </div>
+          <div class="card-body">
+            {% if jf %}
+            <div class="row g-2">
+              <div class="col-4"><div style="font-size:0.72rem;color:#6b7280">Jenjang</div><div class="fw-semibold jabatan-gb">{{ jf.jenjang }}</div></div>
+              <div class="col-3"><div style="font-size:0.72rem;color:#6b7280">TMT</div><div>{{ jf.tmt|date:"d/m/Y" }}</div></div>
+              <div class="col-3"><div style="font-size:0.72rem;color:#6b7280">Angka Kredit</div><div>{{ jf.angka_kredit|default:"-" }}</div></div>
+            </div>
+            {% else %}<p class="text-muted mb-0">Belum ada data jabatan fungsional.</p>{% endif %}
+          </div>
+        </div>
+        {% endwith %}
+      </div>
+      <!-- Unit Kerja & Kepakaran -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header"><i class="bi bi-building"></i> Unit Kerja & Kepakaran</div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless mb-0">
+              <tr><th style="width:35%;font-size:0.78rem;color:#6b7280">Fakultas</th><td>{{ dosen.fakultas.nama|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Jurusan/Bagian</th><td>{{ dosen.jurusan_bagian|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Program Studi</th><td>{{ dosen.program_studi_nama|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Kepakaran</th><td>{{ dosen.ranting_ilmu|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Ijazah BKN</th><td>{{ dosen.tingkat_ijazah_bkn|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Ijazah Borang</th><td>{{ dosen.tingkat_ijazah_borang|default:"-" }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Riwayat Tabs -->
+<div class="card mt-3">
+  <div class="card-header">
+    <ul class="nav nav-pills card-header-pills" id="riwayatTab">
+      <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-kepangkatan">Riwayat Kepangkatan</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-jabatan">Riwayat Jabatan Fungsional</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-pendidikan">Riwayat Pendidikan</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-tugas">Tugas Tambahan</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-masaKerja">Masa Kerja</a></li>
+    </ul>
+  </div>
+  <div class="card-body tab-content">
+    <!-- Kepangkatan -->
+    <div class="tab-pane fade show active" id="tab-kepangkatan">
+      {% if is_admin %}<a href="{% url 'kepangkatan_add' dosen.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Pangkat</th><th>Golongan</th><th>TMT</th><th>Keterangan</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for kp in dosen.riwayat_kepangkatan.all %}
+          <tr>
+            <td>{{ kp.pangkat }}</td>
+            <td><span class="golongan-badge gol-{{ kp.golongan|lower|cut:'/' }}">{{ kp.golongan }}</span></td>
+            <td>{{ kp.tmt|date:"d/m/Y" }}</td>
+            <td>{{ kp.keterangan|default:"-" }}</td>
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'kepangkatan_edit' kp.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'kepangkatan_delete' kp.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-muted text-center">Belum ada data</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Jabatan Fungsional -->
+    <div class="tab-pane fade" id="tab-jabatan">
+      {% if is_admin %}<a href="{% url 'jabatan_add' dosen.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Jenjang</th><th>TMT</th><th>Angka Kredit</th><th>Keterangan</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for jf in dosen.riwayat_jabatan_fungsional.all %}
+          <tr>
+            <td class="jabatan-gb">{{ jf.jenjang }}</td>
+            <td>{{ jf.tmt|date:"d/m/Y" }}</td>
+            <td>{{ jf.angka_kredit|default:"-" }}</td>
+            <td>{{ jf.keterangan|default:"-" }}</td>
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'jabatan_edit' jf.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'jabatan_delete' jf.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-muted text-center">Belum ada data</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pendidikan -->
+    <div class="tab-pane fade" id="tab-pendidikan">
+      {% if is_admin %}<a href="{% url 'pendidikan_add' dosen.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Jenjang</th><th>Bidang Studi</th><th>Institusi</th><th>Tahun Lulus</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for pend in dosen.riwayat_pendidikan.all %}
+          <tr>
+            <td><span class="badge bg-info text-dark">{{ pend.jenjang }}</span></td>
+            <td>{{ pend.bidang_studi|default:"-" }}</td>
+            <td>{{ pend.institusi|default:"-" }}</td>
+            <td>{{ pend.tahun_lulus|default:"-" }}</td>
+            {% if is_admin %}
+            <td><a href="{% url 'pendidikan_delete' pend.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a></td>
+            {% endif %}
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-muted text-center">Belum ada data</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tugas Tambahan -->
+    <div class="tab-pane fade" id="tab-tugas">
+      {% if is_admin %}<a href="{% url 'tugas_tambahan_add' dosen.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Jabatan</th><th>No. SK</th><th>Tgl. SK</th><th>TMT</th><th>Status</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for tt in dosen.tugas_tambahan.all %}
+          <tr>
+            <td>{{ tt.jabatan }}</td>
+            <td>{{ tt.no_sk|default:"-" }}</td>
+            <td>{{ tt.tgl_sk|date:"d/m/Y"|default:"-" }}</td>
+            <td>{{ tt.tmt_jabatan|date:"d/m/Y"|default:"-" }}</td>
+            <td><span class="badge {% if tt.is_aktif %}bg-success{% else %}bg-secondary{% endif %}">{% if tt.is_aktif %}Aktif{% else %}Tidak Aktif{% endif %}</span></td>
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'tugas_tambahan_edit' tt.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'tugas_tambahan_delete' tt.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}<tr><td colspan="6" class="text-muted text-center">Belum ada data</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Masa Kerja -->
+    <div class="tab-pane fade" id="tab-masaKerja">
+      {% if is_admin %}<a href="{% url 'masa_kerja_edit' dosen.pk %}" class="btn btn-sm btn-primary mb-2"><i class="bi bi-pencil"></i> Edit Masa Kerja</a>{% endif %}
+      {% if dosen.masa_kerja %}
+      {% with mk=dosen.masa_kerja %}
+      <table class="table table-sm" style="max-width:500px">
+        <tr><th style="color:#6b7280;font-size:0.78rem">Masa Kerja CPNS</th><td>{{ mk.cpns_tahun|default:0 }} tahun {{ mk.cpns_bulan|default:0 }} bulan</td></tr>
+        <tr><th style="color:#6b7280;font-size:0.78rem">Masa Kerja Golongan</th><td>{{ mk.golongan_tahun|default:0 }} tahun {{ mk.golongan_bulan|default:0 }} bulan</td></tr>
+        <tr><th style="color:#6b7280;font-size:0.78rem">Masa Kerja Jabatan</th><td>{{ mk.jabatan_tahun|default:0 }} tahun {{ mk.jabatan_bulan|default:0 }} bulan</td></tr>
+        <tr><th style="color:#6b7280;font-size:0.78rem">Masa Kerja Keseluruhan</th><td><strong>{{ mk.keseluruhan_tahun|default:0 }} tahun {{ mk.keseluruhan_bulan|default:0 }} bulan</strong></td></tr>
+        <tr><th style="color:#6b7280;font-size:0.78rem">Masa Kerja s/d Pensiun</th><td>{{ mk.pensiun_tahun|default:0 }} tahun {{ mk.pensiun_bulan|default:0 }} bulan</td></tr>
+      </table>
+      {% endwith %}
+      {% else %}<p class="text-muted">Belum ada data masa kerja.</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,274 @@
+{% extends 'dosen/base.html' %}
+{% block title %}{{ tendik.nama_lengkap }} - SIMPEG{% endblock %}
+{% block page_title %}Profil Tendik{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <div>
+    <a href="{% url 'dashboard_tendik' %}" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-arrow-left"></i> Kembali</a>
+    <span class="fw-semibold">{{ tendik.nama_lengkap }}</span>
+  </div>
+  {% if is_admin %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'tendik_edit' tendik.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i> Edit Data Pokok</a>
+    <a href="{% url 'tendik_delete' tendik.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Hapus</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <!-- Identitas -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-person-badge"></i> Identitas Tendik</div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div style="width:64px;height:64px;background:#e0f2fe;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;color:#0369a1">
+            {{ tendik.nama_terang|first|upper }}
+          </div>
+          <div>
+            <h5 class="mb-0 fw-bold">{{ tendik.nama_lengkap }}</h5>
+            <div class="text-muted" style="font-size:0.8rem">
+              {% if tendik.unit_kerja %}{{ tendik.unit_kerja.nama }}
+              {% elif tendik.fakultas %}{{ tendik.fakultas.nama }}
+              {% else %}Unit belum ditentukan{% endif %}
+            </div>
+            <span class="badge {% if tendik.status == 'PNS' %}bg-success{% elif tendik.status == 'CPNS' %}bg-warning text-dark{% else %}bg-secondary{% endif %} mt-1">{{ tendik.status }}</span>
+          </div>
+        </div>
+        <table class="table table-sm table-borderless mb-0">
+          <tr><th style="width:38%;font-size:0.78rem;color:#6b7280">NIP</th><td>{{ tendik.nip|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">NIDN/NI</th><td>{{ tendik.nidn|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">NUPTK</th><td>{{ tendik.nuptk|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">No. KTP</th><td>{{ tendik.no_ktp|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">KARPEG</th><td>{{ tendik.karpeg|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">NIRA</th><td>{{ tendik.nira|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Jenis Kelamin</th><td>{{ tendik.get_jenis_kelamin_display }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Agama</th><td>{{ tendik.agama|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Tempat Lahir</th><td>{{ tendik.tempat_lahir|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Tanggal Lahir</th><td>{{ tendik.tanggal_lahir|date:"d-m-Y"|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Usia</th><td>{{ tendik.usia_saat_ini|default:"-" }} tahun</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">Tahun Pensiun</th><td><strong>{{ tendik.tahun_pensiun|default:"-" }}</strong></td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">TMT CPNS</th><td>{{ tendik.tmt_cpns|date:"d/m/Y"|default:"-" }}</td></tr>
+          <tr><th style="font-size:0.78rem;color:#6b7280">TMT PNS</th><td>{{ tendik.tmt_pns|date:"d/m/Y"|default:"-" }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kepangkatan, Jabatan, Unit -->
+  <div class="col-lg-7">
+    <div class="row g-3">
+      <!-- Kepangkatan -->
+      <div class="col-12">
+        {% with kp=tendik.kepangkatan_terakhir %}
+        <div class="card" style="border-left:4px solid #c8a227">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-award"></i> Kepangkatan Terakhir</span>
+            {% if is_admin %}<a href="{% url 'kepangkatan_tendik_add' tendik.pk %}" class="btn btn-xs btn-outline-success"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+          </div>
+          <div class="card-body">
+            {% if kp %}
+            <div class="row g-2">
+              <div class="col-5"><div style="font-size:0.72rem;color:#6b7280">Pangkat</div><div class="fw-semibold">{{ kp.pangkat }}</div></div>
+              <div class="col-2"><div style="font-size:0.72rem;color:#6b7280">Golongan</div><span class="golongan-badge gol-{{ kp.golongan|lower|cut:'/' }}">{{ kp.golongan }}</span></div>
+              <div class="col-4"><div style="font-size:0.72rem;color:#6b7280">TMT</div><div>{{ kp.tmt|date:"d/m/Y" }}</div></div>
+            </div>
+            {% else %}<p class="text-muted mb-0">Belum ada data kepangkatan.</p>{% endif %}
+          </div>
+        </div>
+        {% endwith %}
+      </div>
+
+      <!-- Jabatan Struktural -->
+      <div class="col-12">
+        {% with js=tendik.jabatan_struktural_aktif %}
+        <div class="card" style="border-left:4px solid #b45309">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-diagram-3"></i> Jabatan Struktural Aktif</span>
+            {% if is_admin %}<a href="{% url 'jabatan_struktural_add' tendik.pk %}" class="btn btn-xs btn-outline-success"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+          </div>
+          <div class="card-body">
+            {% if js %}
+            <div class="row g-2">
+              <div class="col-5"><div style="font-size:0.72rem;color:#6b7280">Jabatan</div><div class="fw-semibold" style="color:#b45309">{{ js.jabatan }}</div></div>
+              <div class="col-2"><div style="font-size:0.72rem;color:#6b7280">Eselon</div><div>{{ js.eselon|default:"-" }}</div></div>
+              <div class="col-4"><div style="font-size:0.72rem;color:#6b7280">TMT</div><div>{{ js.tmt_jabatan|date:"d/m/Y"|default:"-" }}</div></div>
+            </div>
+            {% else %}<p class="text-muted mb-0">Tidak ada jabatan struktural aktif.</p>{% endif %}
+          </div>
+        </div>
+        {% endwith %}
+      </div>
+
+      <!-- Unit Kerja & Kompetensi -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header"><i class="bi bi-building"></i> Unit Kerja & Kompetensi</div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless mb-0">
+              <tr><th style="width:38%;font-size:0.78rem;color:#6b7280">Unit Kerja</th><td>{{ tendik.unit_kerja.nama|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Fakultas</th><td>{{ tendik.fakultas.nama|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Bagian</th><td>{{ tendik.bagian|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Bidang Keahlian</th><td>{{ tendik.bidang_keahlian|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Ijazah BKN</th><td>{{ tendik.tingkat_ijazah_bkn|default:"-" }}</td></tr>
+              <tr><th style="font-size:0.78rem;color:#6b7280">Ijazah Borang</th><td>{{ tendik.tingkat_ijazah_borang|default:"-" }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Riwayat Tabs -->
+<div class="card mt-3">
+  <div class="card-header">
+    <ul class="nav nav-pills card-header-pills">
+      <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-kp">Riwayat Kepangkatan</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-jf">Jabatan Fungsional</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-js">Jabatan Struktural</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-pend">Riwayat Pendidikan</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-tt">Tugas Tambahan</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-mk">Masa Kerja</a></li>
+    </ul>
+  </div>
+  <div class="card-body tab-content">
+
+    <!-- Kepangkatan -->
+    <div class="tab-pane fade show active" id="tab-kp">
+      {% if is_admin %}<a href="{% url 'kepangkatan_tendik_add' tendik.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Pangkat</th><th>Golongan</th><th>TMT</th><th>Keterangan</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for kp in tendik.riwayat_kepangkatan.all %}
+          <tr>
+            <td>{{ kp.pangkat }}</td>
+            <td><span class="golongan-badge gol-{{ kp.golongan|lower|cut:'/' }}">{{ kp.golongan }}</span></td>
+            <td>{{ kp.tmt|date:"d/m/Y" }}</td>
+            <td>{{ kp.keterangan|default:"-" }}</td>
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'kepangkatan_tendik_edit' kp.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'kepangkatan_tendik_delete' kp.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-muted text-center">Belum ada data</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Jabatan Fungsional -->
+    <div class="tab-pane fade" id="tab-jf">
+      {% if is_admin %}<a href="{% url 'jabatan_tendik_add' tendik.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Jenjang</th><th>TMT</th><th>Angka Kredit</th><th>Keterangan</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for jf in tendik.riwayat_jabatan_fungsional.all %}
+          <tr>
+            <td class="jabatan-l fw-semibold">{{ jf.jenjang }}</td>
+            <td>{{ jf.tmt|date:"d/m/Y" }}</td>
+            <td>{{ jf.angka_kredit|default:"-" }}</td>
+            <td>{{ jf.keterangan|default:"-" }}</td>
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'jabatan_tendik_edit' jf.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'jabatan_tendik_delete' jf.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-muted text-center">Belum ada data</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Jabatan Struktural -->
+    <div class="tab-pane fade" id="tab-js">
+      {% if is_admin %}<a href="{% url 'jabatan_struktural_add' tendik.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Jabatan</th><th>Eselon</th><th>Unit Kerja</th><th>No. SK</th><th>TMT</th><th>Status</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for js in tendik.jabatan_struktural.all %}
+          <tr>
+            <td class="fw-semibold" style="color:#b45309">{{ js.jabatan }}</td>
+            <td>{% if js.eselon %}<span class="badge bg-warning text-dark">{{ js.eselon }}</span>{% else %}-{% endif %}</td>
+            <td>{{ js.unit_kerja|default:"-" }}</td>
+            <td>{{ js.no_sk|default:"-" }}</td>
+            <td>{{ js.tmt_jabatan|date:"d/m/Y"|default:"-" }}</td>
+            <td><span class="badge {% if js.is_aktif %}bg-success{% else %}bg-secondary{% endif %}">{% if js.is_aktif %}Aktif{% else %}Tidak Aktif{% endif %}</span></td>
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'jabatan_struktural_edit' js.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'jabatan_struktural_delete' js.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}<tr><td colspan="7" class="text-muted text-center">Belum ada data</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pendidikan -->
+    <div class="tab-pane fade" id="tab-pend">
+      {% if is_admin %}<a href="{% url 'pendidikan_tendik_add' tendik.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Jenjang</th><th>Bidang Studi</th><th>Institusi</th><th>Tahun Lulus</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for pend in tendik.riwayat_pendidikan.all %}
+          <tr>
+            <td><span class="badge bg-info text-dark">{{ pend.jenjang }}</span></td>
+            <td>{{ pend.bidang_studi|default:"-" }}</td>
+            <td>{{ pend.institusi|default:"-" }}</td>
+            <td>{{ pend.tahun_lulus|default:"-" }}</td>
+            {% if is_admin %}
+            <td><a href="{% url 'pendidikan_tendik_delete' pend.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a></td>
+            {% endif %}
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-muted text-center">Belum ada data</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tugas Tambahan -->
+    <div class="tab-pane fade" id="tab-tt">
+      {% if is_admin %}<a href="{% url 'tugas_tendik_add' tendik.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Jabatan</th><th>No. SK</th><th>Tgl. SK</th><th>TMT</th><th>Status</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for tt in tendik.tugas_tambahan.all %}
+          <tr>
+            <td>{{ tt.jabatan }}</td>
+            <td>{{ tt.no_sk|default:"-" }}</td>
+            <td>{{ tt.tgl_sk|date:"d/m/Y"|default:"-" }}</td>
+            <td>{{ tt.tmt_jabatan|date:"d/m/Y"|default:"-" }}</td>
+            <td><span class="badge {% if tt.is_aktif %}bg-success{% else %}bg-secondary{% endif %}">{% if tt.is_aktif %}Aktif{% else %}Tidak Aktif{% endif %}</span></td>
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'tugas_tendik_edit' tt.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'tugas_tendik_delete' tt.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}<tr><td colspan="6" class="text-muted text-center">Belum ada data</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Masa Kerja -->
+    <div class="tab-pane fade" id="tab-mk">
+      {% if is_admin %}<a href="{% url 'masa_kerja_tendik_edit' tendik.pk %}" class="btn btn-sm btn-primary mb-2"><i class="bi bi-pencil"></i> Edit Masa Kerja</a>{% endif %}
+      {% if tendik.masa_kerja %}{% with mk=tendik.masa_kerja %}
+      <table class="table table-sm" style="max-width:500px">
+        <tr><th style="color:#6b7280;font-size:0.78rem">MK CPNS</th><td>{{ mk.cpns_tahun|default:0 }} thn {{ mk.cpns_bulan|default:0 }} bln</td></tr>
+        <tr><th style="color:#6b7280;font-size:0.78rem">MK Golongan</th><td>{{ mk.golongan_tahun|default:0 }} thn {{ mk.golongan_bulan|default:0 }} bln</td></tr>
+        <tr><th style="color:#6b7280;font-size:0.78rem">MK Jabatan</th><td>{{ mk.jabatan_tahun|default:0 }} thn {{ mk.jabatan_bulan|default:0 }} bln</td></tr>
+        <tr><th style="color:#6b7280;font-size:0.78rem">MK Keseluruhan</th><td><strong>{{ mk.keseluruhan_tahun|default:0 }} thn {{ mk.keseluruhan_bulan|default:0 }} bln</strong></td></tr>
+        <tr><th style="color:#6b7280;font-size:0.78rem">MK s/d Pensiun</th><td>{{ mk.pensiun_tahun|default:0 }} thn {{ mk.pensiun_bulan|default:0 }} bln</td></tr>
+      </table>
+      {% endwith %}{% else %}<p class="text-muted">Belum ada data masa kerja.</p>{% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'dosen/base.html' %}
+{% block title %}Unit Kerja - SIMPEG{% endblock %}
+{% block page_title %}Manajemen Unit Kerja{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h5 class="mb-0">Daftar Unit Kerja</h5>
+  <a href="{% url 'unit_kerja_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus"></i> Tambah Unit Kerja</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th>Kode</th><th>Nama Unit Kerja</th><th>Jenis</th><th>Unit Induk</th><th class="text-center">Jml. Tendik</th><th class="text-center">Aksi</th></tr></thead>
+      <tbody>
+        {% for u in unit_list %}
+        <tr>
+          <td><span class="badge bg-primary">{{ u.kode }}</span></td>
+          <td>{{ u.nama }}</td>
+          <td><span class="badge bg-secondary bg-opacity-50 text-dark">{{ u.get_jenis_display }}</span></td>
+          <td>{{ u.induk.nama|default:"-" }}</td>
+          <td class="text-center">{{ u.jumlah_tendik }}</td>
+          <td class="text-center"><a href="{% url 'unit_kerja_edit' u.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="text-muted text-center py-3">Belum ada data unit kerja</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

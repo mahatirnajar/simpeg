@@ -1,0 +1,242 @@
+{% extends 'dosen/base.html' %}
+{% block title %}Dashboard DUK Tendik - SIMPEG UNTAD{% endblock %}
+{% block page_title %}Dashboard DUK Tenaga Kependidikan{% endblock %}
+
+{% block content %}
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#0369a1,#0ea5e9)">
+      <div style="font-size:0.75rem;opacity:0.8">Total Tendik</div>
+      <div style="font-size:2rem;font-weight:700">{{ total_tendik }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Seluruh Unit</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#1a5c2a,#2d8a47)">
+      <div style="font-size:0.75rem;opacity:0.8">PNS</div>
+      <div style="font-size:2rem;font-weight:700">{{ pns_count }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Pegawai Negeri Sipil</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#c8a227,#e8ba30)">
+      <div style="font-size:0.75rem;opacity:0.8">CPNS</div>
+      <div style="font-size:2rem;font-weight:700">{{ cpns_count }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Calon PNS</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#7c3aed,#9f5cfa)">
+      <div style="font-size:0.75rem;opacity:0.8">PPPK</div>
+      <div style="font-size:2rem;font-weight:700">{{ pppk_count }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Pegawai Pemerintah</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter & Search -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Cari Tendik</label>
+        <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Nama / NIP...">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Unit Kerja</label>
+        <select name="unit" class="form-select form-select-sm">
+          <option value="">Semua Unit</option>
+          {% for u in unit_list %}
+          <option value="{{ u.pk }}" {% if unit_id == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.kode }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Fakultas</label>
+        <select name="fakultas" class="form-select form-select-sm">
+          <option value="">Semua</option>
+          {% for fak in fakultas_list %}
+          <option value="{{ fak.pk }}" {% if fakultas_id == fak.pk|stringformat:"s" %}selected{% endif %}>{{ fak.kode }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">Semua</option>
+          <option value="PNS"  {% if status_filter == 'PNS'  %}selected{% endif %}>PNS</option>
+          <option value="CPNS" {% if status_filter == 'CPNS' %}selected{% endif %}>CPNS</option>
+          <option value="PPPK" {% if status_filter == 'PPPK' %}selected{% endif %}>PPPK</option>
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Cari</button>
+        <a href="{% url 'dashboard_tendik' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+        {% if is_admin %}
+        <a href="{% url 'tendik_create' %}" class="btn btn-success btn-sm ms-auto"><i class="bi bi-plus-lg"></i> Tambah</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DUK Table -->
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between py-2">
+    <span><i class="bi bi-table me-2"></i>Daftar Urut Kepangkatan Tenaga Kependidikan</span>
+    <small class="text-muted">{{ page_obj.paginator.count }} data ditemukan</small>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th class="text-center" style="width:35px">NO</th>
+            <th>NIP</th>
+            <th style="min-width:200px">NAMA</th>
+            <th>UNIT KERJA</th>
+            <th>STATUS</th>
+            <th class="text-center">L/P</th>
+            <th style="min-width:140px">PANGKAT</th>
+            <th class="text-center">GOL.</th>
+            <th>TMT</th>
+            <th style="min-width:140px">JAB. FUNGSIONAL</th>
+            <th style="min-width:160px">JAB. STRUKTURAL</th>
+            <th>ESELON</th>
+            <th colspan="2" class="text-center">MK CPNS</th>
+            <th colspan="2" class="text-center">MK GOL</th>
+            <th colspan="2" class="text-center">MK JAB</th>
+            <th colspan="2" class="text-center">MK KESELURUHAN</th>
+            <th colspan="2" class="text-center">MK PENSIUN</th>
+            <th>BAGIAN</th>
+            <th>KARPEG</th>
+            <th>TMT CPNS</th>
+            <th>TMT PNS</th>
+            <th>AGAMA</th>
+            <th>KEPAKARAN</th>
+            <th>IJ. BKN</th>
+            <th>IJ. BORANG</th>
+            <th>TMP LAHIR</th>
+            <th>TGL LAHIR</th>
+            <th class="text-center">USIA</th>
+            <th class="text-center">PENSIUN</th>
+            {% if is_admin %}<th class="text-center">AKSI</th>{% endif %}
+          </tr>
+          <tr style="background:#f0f0f0;font-size:0.68rem;color:#6b7280">
+            <th colspan="12"></th>
+            <th>Thn</th><th>Bln</th>
+            <th>Thn</th><th>Bln</th>
+            <th>Thn</th><th>Bln</th>
+            <th>Thn</th><th>Bln</th>
+            <th>Thn</th><th>Bln</th>
+            <th colspan="12"></th>
+            {% if is_admin %}<th></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in page_obj %}
+          {% with t=row.tendik kp=row.kepangkatan jf=row.jabatan_fungsional js=row.jabatan_struktural mk=row.masa_kerja %}
+          <tr>
+            <td class="text-center text-muted">{{ row.no }}</td>
+            <td><small>{{ t.nip|default:"-" }}</small></td>
+            <td>
+              <a href="{% url 'tendik_detail' t.pk %}" class="text-decoration-none fw-semibold">{{ t.nama_lengkap }}</a>
+            </td>
+            <td>
+              <small>
+                {% if t.unit_kerja %}
+                  <span class="badge bg-primary bg-opacity-10 text-primary">{{ t.unit_kerja.kode }}</span>
+                {% elif t.fakultas %}
+                  <span class="badge bg-success bg-opacity-10 text-success">{{ t.fakultas.kode }}</span>
+                {% else %}-{% endif %}
+              </small>
+            </td>
+            <td>
+              <span class="badge {% if t.status == 'PNS' %}bg-success{% elif t.status == 'CPNS' %}bg-warning text-dark{% else %}bg-secondary{% endif %} badge-pangkat">{{ t.status }}</span>
+            </td>
+            <td class="text-center">{{ t.jenis_kelamin }}</td>
+            <td><small>{% if kp %}{{ kp.pangkat }}{% else %}-{% endif %}</small></td>
+            <td class="text-center">
+              {% if kp %}
+              <span class="golongan-badge gol-{{ kp.golongan|lower|cut:'/' }}">{{ kp.golongan }}</span>
+              {% else %}-{% endif %}
+            </td>
+            <td><small>{% if kp %}{{ kp.tmt|date:"d/m/Y" }}{% else %}-{% endif %}</small></td>
+            <td><small>{% if jf %}<span class="jabatan-l">{{ jf.jenjang }}</span>{% else %}-{% endif %}</small></td>
+            <td>
+              {% if js %}
+              <small><span class="fw-semibold" style="color:#b45309">{{ js.jabatan|truncatechars:28 }}</span></small>
+              {% else %}-{% endif %}
+            </td>
+            <td class="text-center">
+              {% if js and js.eselon %}
+              <span class="badge bg-warning text-dark" style="font-size:0.7rem">{{ js.eselon }}</span>
+              {% else %}-{% endif %}
+            </td>
+            <!-- Masa Kerja -->
+            {% if mk %}
+            <td class="text-center">{{ mk.cpns_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.cpns_bulan|default:"-" }}</td>
+            <td class="text-center">{{ mk.golongan_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.golongan_bulan|default:"-" }}</td>
+            <td class="text-center">{{ mk.jabatan_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.jabatan_bulan|default:"-" }}</td>
+            <td class="text-center">{{ mk.keseluruhan_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.keseluruhan_bulan|default:"-" }}</td>
+            <td class="text-center">{{ mk.pensiun_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.pensiun_bulan|default:"-" }}</td>
+            {% else %}
+            <td colspan="10" class="text-center text-muted">-</td>
+            {% endif %}
+            <td><small>{{ t.bagian|default:"-"|truncatechars:25 }}</small></td>
+            <td><small>{{ t.karpeg|default:"-" }}</small></td>
+            <td><small>{% if t.tmt_cpns %}{{ t.tmt_cpns|date:"d/m/Y" }}{% else %}-{% endif %}</small></td>
+            <td><small>{% if t.tmt_pns %}{{ t.tmt_pns|date:"d/m/Y" }}{% else %}-{% endif %}</small></td>
+            <td><small>{{ t.agama|default:"-" }}</small></td>
+            <td><small>{{ t.bidang_keahlian|default:"-"|truncatechars:25 }}</small></td>
+            <td><small>{{ t.tingkat_ijazah_bkn|default:"-" }}</small></td>
+            <td><small>{{ t.tingkat_ijazah_borang|default:"-" }}</small></td>
+            <td><small>{{ t.tempat_lahir|default:"-" }}</small></td>
+            <td><small>{% if t.tanggal_lahir %}{{ t.tanggal_lahir|date:"d-m-Y" }}{% else %}-{% endif %}</small></td>
+            <td class="text-center">{{ t.usia_saat_ini|default:"-" }}</td>
+            <td class="text-center">{{ t.tahun_pensiun|default:"-" }}</td>
+            {% if is_admin %}
+            <td class="text-center">
+              <a href="{% url 'tendik_edit' t.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'tendik_delete' t.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr><td colspan="50" class="text-center py-4 text-muted">Tidak ada data tendik ditemukan</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <small class="text-muted">Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}</small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search }}&unit={{ unit_id }}&status={{ status_filter }}">&laquo;</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ search }}&unit={{ unit_id }}&status={{ status_filter }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search }}&unit={{ unit_id }}&status={{ status_filter }}">&raquo;</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

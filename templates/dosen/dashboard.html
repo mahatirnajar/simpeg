@@ -1,0 +1,246 @@
+{% extends 'dosen/base.html' %}
+{% block title %}Dashboard DUK - SIMPEG UNTAD{% endblock %}
+{% block page_title %}Dashboard DUK Dosen{% endblock %}
+
+{% block content %}
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#1a5c2a,#2d8a47)">
+      <div style="font-size:0.75rem;opacity:0.8">Total Dosen</div>
+      <div style="font-size:2rem;font-weight:700">{{ total_dosen }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Seluruh Fakultas</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#7c3aed,#9f5cfa)">
+      <div style="font-size:0.75rem;opacity:0.8">Guru Besar</div>
+      <div style="font-size:2rem;font-weight:700">{{ gb_count }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Jabatan Fungsional</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#0369a1,#0ea5e9)">
+      <div style="font-size:0.75rem;opacity:0.8">Lektor Kepala</div>
+      <div style="font-size:2rem;font-weight:700">{{ lk_count }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Jabatan Fungsional</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#c8a227,#e8ba30)">
+      <div style="font-size:0.75rem;opacity:0.8">Fakultas</div>
+      <div style="font-size:2rem;font-weight:700">{{ by_fakultas|length }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Unit Kerja</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter & Search -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Cari Dosen</label>
+        <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Nama / NIDN / NIP...">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Fakultas</label>
+        <select name="fakultas" class="form-select form-select-sm">
+          <option value="">Semua Fakultas</option>
+          {% for fak in fakultas_list %}
+          <option value="{{ fak.pk }}" {% if fakultas_id == fak.pk|stringformat:"s" %}selected{% endif %}>{{ fak.kode }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">Semua Status</option>
+          <option value="PNS" {% if status_filter == 'PNS' %}selected{% endif %}>PNS</option>
+          <option value="CPNS" {% if status_filter == 'CPNS' %}selected{% endif %}>CPNS</option>
+          <option value="PPPK" {% if status_filter == 'PPPK' %}selected{% endif %}>PPPK</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Jabatan Fungsional</label>
+        <select name="jabatan" class="form-select form-select-sm">
+          <option value="">Semua</option>
+          <option value="Guru Besar" {% if jabatan_filter == 'Guru Besar' %}selected{% endif %}>Guru Besar</option>
+          <option value="Lektor Kepala" {% if jabatan_filter == 'Lektor Kepala' %}selected{% endif %}>Lektor Kepala</option>
+          <option value="Lektor" {% if jabatan_filter == 'Lektor' %}selected{% endif %}>Lektor</option>
+          <option value="Asisten Ahli" {% if jabatan_filter == 'Asisten Ahli' %}selected{% endif %}>Asisten Ahli</option>
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-search"></i> Cari</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+        {% if is_admin %}
+        <a href="{% url 'dosen_create' %}" class="btn btn-primary btn-sm ms-auto"><i class="bi bi-plus-lg"></i> Tambah</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DUK Table -->
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between py-2">
+    <span><i class="bi bi-table me-2"></i>Daftar Urut Kepangkatan Dosen</span>
+    <small class="text-muted">{{ page_obj.paginator.count }} data ditemukan</small>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0" id="duk-table">
+        <thead>
+          <tr>
+            <th class="text-center" style="width:35px">NO</th>
+            <th>NIDN</th>
+            <th>NIP</th>
+            <th style="min-width:200px">NAMA DOSEN</th>
+            <th>FAKULTAS</th>
+            <th>STATUS</th>
+            <th class="text-center">L/P</th>
+            <th style="min-width:140px">PANGKAT</th>
+            <th class="text-center">GOL.</th>
+            <th>TMT</th>
+            <th style="min-width:120px">JAB. FUNGSIONAL</th>
+            <th>TMT JAB.</th>
+            <th class="text-end">AK (KUM)</th>
+            <th colspan="2" class="text-center">MASA KERJA CPNS</th>
+            <th colspan="2" class="text-center">MASA KERJA GOL</th>
+            <th colspan="2" class="text-center">MASA KERJA JAB</th>
+            <th colspan="2" class="text-center">MK KESELURUHAN</th>
+            <th colspan="2" class="text-center">MK PENSIUN</th>
+            <th>JURUSAN/BAGIAN</th>
+            <th>PRODI</th>
+            <th>NO. REG SERDOS</th>
+            <th>KARPEG</th>
+            <th>TMT CPNS</th>
+            <th>TMT PNS</th>
+            <th>GELAR DEPAN</th>
+            <th>GELAR BELAKANG</th>
+            <th>AGAMA</th>
+            <th style="min-width:150px">KEPAKARAN</th>
+            <th style="min-width:160px">TUGAS TAMBAHAN</th>
+            <th>IJ. BKN</th>
+            <th>IJ. BORANG</th>
+            <th>TMP LAHIR</th>
+            <th>TGL LAHIR</th>
+            <th class="text-center">USIA</th>
+            <th class="text-center">PENSIUN</th>
+            {% if is_admin %}<th class="text-center">AKSI</th>{% endif %}
+          </tr>
+          <tr style="background:#f0f0f0;font-size:0.68rem;color:#6b7280">
+            <th></th><th></th><th></th><th></th><th></th><th></th><th></th>
+            <th></th><th></th><th></th><th></th><th></th><th></th>
+            <th>Thn</th><th>Bln</th>
+            <th>Thn</th><th>Bln</th>
+            <th>Thn</th><th>Bln</th>
+            <th>Thn</th><th>Bln</th>
+            <th>Thn</th><th>Bln</th>
+            <th colspan="16"></th>
+            {% if is_admin %}<th></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in page_obj %}
+          {% with d=row.dosen kp=row.kepangkatan jf=row.jabatan_fungsional tt=row.tugas_tambahan mk=row.masa_kerja %}
+          <tr>
+            <td class="text-center text-muted">{{ row.no }}</td>
+            <td><small>{{ d.nidn|default:"-" }}</small></td>
+            <td><small>{{ d.nip|default:"-" }}</small></td>
+            <td>
+              <a href="{% url 'dosen_detail' d.pk %}" class="text-decoration-none fw-semibold">{{ d.nama_lengkap }}</a>
+            </td>
+            <td><small>{{ d.fakultas.kode|default:"-" }}</small></td>
+            <td>
+              <span class="badge {% if d.status == 'PNS' %}bg-success{% elif d.status == 'CPNS' %}bg-warning text-dark{% else %}bg-secondary{% endif %} badge-pangkat">{{ d.status }}</span>
+            </td>
+            <td class="text-center">{{ d.jenis_kelamin }}</td>
+            <td><small>{% if kp %}{{ kp.pangkat }}{% else %}-{% endif %}</small></td>
+            <td class="text-center">
+              {% if kp %}
+              {% with g=kp.golongan|lower|cut:"/" %}
+              <span class="golongan-badge gol-{{ g }}">{{ kp.golongan }}</span>
+              {% endwith %}
+              {% else %}-{% endif %}
+            </td>
+            <td><small>{% if kp %}{{ kp.tmt|date:"d/m/Y" }}{% else %}-{% endif %}</small></td>
+            <td>
+              {% if jf %}
+              <span class="{% if 'Guru Besar' in jf.jenjang %}jabatan-gb{% elif 'Lektor Kepala' in jf.jenjang %}jabatan-lk{% elif 'Lektor' in jf.jenjang %}jabatan-l{% else %}jabatan-aa{% endif %}">{{ jf.jenjang }}</span>
+              {% else %}-{% endif %}
+            </td>
+            <td><small>{% if jf %}{{ jf.tmt|date:"d/m/Y" }}{% else %}-{% endif %}</small></td>
+            <td class="text-end"><small>{% if jf and jf.angka_kredit %}{{ jf.angka_kredit }}{% else %}-{% endif %}</small></td>
+            <!-- Masa Kerja -->
+            {% if mk %}
+            <td class="text-center">{{ mk.cpns_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.cpns_bulan|default:"-" }}</td>
+            <td class="text-center">{{ mk.golongan_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.golongan_bulan|default:"-" }}</td>
+            <td class="text-center">{{ mk.jabatan_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.jabatan_bulan|default:"-" }}</td>
+            <td class="text-center">{{ mk.keseluruhan_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.keseluruhan_bulan|default:"-" }}</td>
+            <td class="text-center">{{ mk.pensiun_tahun|default:"-" }}</td>
+            <td class="text-center">{{ mk.pensiun_bulan|default:"-" }}</td>
+            {% else %}
+            <td colspan="10" class="text-center text-muted">-</td>
+            {% endif %}
+            <td><small>{{ d.jurusan_bagian|default:"-"|truncatechars:30 }}</small></td>
+            <td><small>{{ d.program_studi_nama|default:"-"|truncatechars:20 }}</small></td>
+            <td><small>{{ d.no_reg_serdos|default:"-" }}</small></td>
+            <td><small>{{ d.karpeg|default:"-" }}</small></td>
+            <td><small>{% if d.tmt_cpns %}{{ d.tmt_cpns|date:"d/m/Y" }}{% else %}-{% endif %}</small></td>
+            <td><small>{% if d.tmt_pns %}{{ d.tmt_pns|date:"d/m/Y" }}{% else %}-{% endif %}</small></td>
+            <td><small>{{ d.gelar_depan|default:"-" }}</small></td>
+            <td><small>{{ d.gelar_belakang|default:"-" }}</small></td>
+            <td><small>{{ d.agama|default:"-" }}</small></td>
+            <td><small>{{ d.ranting_ilmu|default:"-"|truncatechars:30 }}</small></td>
+            <td><small>{% if tt %}{{ tt.jabatan|truncatechars:30 }}{% else %}-{% endif %}</small></td>
+            <td><small>{{ d.tingkat_ijazah_bkn|default:"-" }}</small></td>
+            <td><small>{{ d.tingkat_ijazah_borang|default:"-" }}</small></td>
+            <td><small>{{ d.tempat_lahir|default:"-" }}</small></td>
+            <td><small>{% if d.tanggal_lahir %}{{ d.tanggal_lahir|date:"d-m-Y" }}{% else %}-{% endif %}</small></td>
+            <td class="text-center">{{ d.usia_saat_ini|default:"-" }}</td>
+            <td class="text-center">{{ d.tahun_pensiun|default:"-" }}</td>
+            {% if is_admin %}
+            <td class="text-center">
+              <a href="{% url 'dosen_edit' d.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'dosen_delete' d.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr><td colspan="50" class="text-center py-4 text-muted">Tidak ada data dosen ditemukan</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <small class="text-muted">Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}</small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search }}&fakultas={{ fakultas_id }}&status={{ status_filter }}&jabatan={{ jabatan_filter }}">&laquo;</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ search }}&fakultas={{ fakultas_id }}&status={{ status_filter }}&jabatan={{ jabatan_filter }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search }}&fakultas={{ fakultas_id }}&status={{ status_filter }}&jabatan={{ jabatan_filter }}">&raquo;</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
