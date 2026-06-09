@@ -2,10 +2,15 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
-from django.db.models import Q, Count
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
+from django.db.models import OuterRef, Subquery, Prefetch, Q, Count
+import io
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
 
 from .models import (
     Dosen, Fakultas, RiwayatKepangkatan, RiwayatJabatanFungsional,
@@ -59,7 +64,7 @@ def dashboard(request):
     if search:
         dosen_qs = dosen_qs.filter(
             Q(nama_lengkap__icontains=search) |
-            Q(nidn__icontains=search) |
+            Q(nuptk__icontains=search) |
             Q(nip__icontains=search) |
             Q(nama_terang__icontains=search)
         )
@@ -100,23 +105,23 @@ def dashboard(request):
 
     # Stats
     total = Dosen.objects.count()
-    by_fakultas = Fakultas.objects.annotate(jumlah=Count('dosen')).order_by('-jumlah')
-    gb_count = RiwayatJabatanFungsional.objects.filter(
-        jenjang__icontains='Guru Besar',
-        dosen__in=Dosen.objects.all()
-    ).values('dosen').distinct().count()
-    lk_count = RiwayatJabatanFungsional.objects.filter(
-        jenjang__icontains='Lektor Kepala',
-        dosen__in=Dosen.objects.all()
-    ).values('dosen').distinct().count()
+    jabatan_counts = RiwayatJabatanFungsional.objects.aggregate(
+        gb_count=Count('dosen', filter=Q(jenjang__icontains='Guru Besar'), distinct=True),
+        lk_count=Count('dosen', filter=Q(jenjang__icontains='Lektor Kepala'), distinct=True),
+        lektor_count=Count('dosen', filter=Q(jenjang__icontains='Lektor') & ~Q(jenjang__icontains='Lektor Kepala'), distinct=True),
+        asisten_ahli_count=Count('dosen', filter=Q(jenjang__icontains='Asisten Ahli'), distinct=True),
+        tenaga_pengajar_count=Count('dosen', filter=Q(jenjang__icontains='Tenaga Pengajar'), distinct=True)
+    )
 
     context = {
         'page_obj': page_obj,
         'per_page': str(per_page),
         'total_dosen': total,
-        'by_fakultas': by_fakultas,
-        'gb_count': gb_count,
-        'lk_count': lk_count,
+        'gb_count': jabatan_counts['gb_count'],
+        'lk_count': jabatan_counts['lk_count'],
+        'lektor_count': jabatan_counts['lektor_count'],
+        'asisten_ahli_count': jabatan_counts['asisten_ahli_count'],
+        'tenaga_pengajar_count': jabatan_counts['tenaga_pengajar_count'],
         'fakultas_list': Fakultas.objects.all(),
         'search': search,
         'fakultas_id': fakultas_id,
@@ -125,6 +130,229 @@ def dashboard(request):
         'is_admin': is_admin(request.user),
     }
     return render(request, 'dosen/dashboard.html', context)
+
+
+# EXPORT DOSEN
+
+@login_required
+def export_excel(request):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Data Dosen"
+
+    # ── Styles ──────────────────────────────────────────────────────────────
+    hdr_font   = Font(name="Arial", bold=True, color="FFFFFF", size=9)
+    hdr_fill   = PatternFill("solid", start_color="1F4E79")
+    sub_fill   = PatternFill("solid", start_color="374151")   # sub-header (Thn/Bln)
+    sub_font   = Font(name="Arial", bold=True, color="FFFFFF", size=8)
+    alt_fill   = PatternFill("solid", start_color="EBF3FB")
+    center     = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left       = Alignment(horizontal="left",   vertical="center", wrap_text=True)
+    right      = Alignment(horizontal="right",  vertical="center", wrap_text=True)
+    thin       = Side(style="thin", color="BFBFBF")
+    border     = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def hcell(row, col, value, align=center):
+        c = ws.cell(row=row, column=col, value=value)
+        c.font = hdr_font; c.fill = hdr_fill
+        c.alignment = align; c.border = border
+        return c
+
+    def scell(row, col, value):
+        c = ws.cell(row=row, column=col, value=value)
+        c.font = sub_font; c.fill = sub_fill
+        c.alignment = center; c.border = border
+        return c
+
+    # ── Baris 1: Judul ──────────────────────────────────────────────────────
+    TOTAL_COLS = 40
+    ws.merge_cells(f"A1:{get_column_letter(TOTAL_COLS)}1")
+    tc = ws["A1"]
+    tc.value     = "DATA DOSEN UNIVERSITAS TADULAKO"
+    tc.font      = Font(name="Arial", bold=True, size=14, color="1F4E79")
+    tc.alignment = center
+    ws.row_dimensions[1].height = 28
+    single_cols = {
+        1:  ("NO",              6),
+        2:  ("NIDN",           16),
+        3:  ("NIP",            20),
+        4:  ("NAMA DOSEN",     32),
+        5:  ("FAKULTAS",       22),
+        6:  ("STATUS",         10),
+        7:  ("L/P",            10),
+        8:  ("PANGKAT",        20),
+        9:  ("GOL.",            8),
+        10: ("TMT",            13),
+        11: ("JAB. FUNGSIONAL",20),
+        12: ("TMT JAB.",       13),
+        13: ("AK (KUM)",       10),
+        24: ("JURUSAN/BAGIAN", 22),
+        25: ("PRODI",          22),
+        26: ("NO. REG SERDOS", 18),
+        27: ("KARPEG",         14),
+        28: ("TMT CPNS",       13),
+        29: ("TMT PNS",        13),
+        30: ("GELAR DEPAN",    14),
+        31: ("GELAR BELAKANG", 16),
+        32: ("AGAMA",          12),
+        33: ("KEPAKARAN",      22),
+        34: ("TUGAS TAMBAHAN", 24),
+        35: ("IJ. BKN",        10),
+        36: ("IJ. BORANG",     11),
+        37: ("TMP LAHIR",      16),
+        38: ("TGL LAHIR",      13),
+        39: ("USIA",            7),
+        40: ("PENSIUN",         9),
+    }
+
+    # Kolom dengan sub-header Thn/Bln (merge baris 2, sub di baris 3)
+    grouped_cols = {
+        14: "MASA KERJA CPNS",
+        16: "MASA KERJA GOL",
+        18: "MASA KERJA JAB",
+        20: "MK KESELURUHAN",
+        22: "MK PENSIUN",
+    }
+
+    # Render single cols (merge row 2-3)
+    for col, (label, width) in single_cols.items():
+        ws.merge_cells(start_row=2, start_column=col,
+                       end_row=3,   end_column=col)
+        hcell(2, col, label)
+        ws.column_dimensions[get_column_letter(col)].width = width
+
+    # Render grouped cols (merge 2 kolom di row 2, lalu Thn/Bln di row 3)
+    for start_col, label in grouped_cols.items():
+        ws.merge_cells(start_row=2, start_column=start_col,
+                       end_row=2,   end_column=start_col + 1)
+        hcell(2, start_col, label)
+        scell(3, start_col,     "Thn")
+        scell(3, start_col + 1, "Bln")
+        ws.column_dimensions[get_column_letter(start_col)].width     = 7
+        ws.column_dimensions[get_column_letter(start_col + 1)].width = 7
+
+    ws.row_dimensions[2].height = 38
+    ws.row_dimensions[3].height = 18
+    ws.freeze_panes = "A4"
+
+    # ── Data rows (mulai baris 4) ────────────────────────────────────────────
+    qs = (
+        Dosen.objects
+        .select_related("fakultas")
+        .prefetch_related(
+            "riwayat_kepangkatan",
+            "riwayat_jabatan_fungsional",
+            "tugas_tambahan",
+            "masa_kerja",
+        )
+        .order_by("nama_lengkap")
+    )
+
+    def fmt_date(d):
+        return d.strftime("%d-%m-%Y") if d else "-"
+
+    def val_or_dash(v):
+        return v if v else "-"
+
+    for row_num, dosen in enumerate(qs, start=1):
+        row_idx = row_num + 3
+        fill    = alt_fill if row_num % 2 == 0 else None
+
+        kpk  = dosen.kepangkatan_terakhir          # RiwayatKepangkatan | None
+        jab  = dosen.jabatan_fungsional_terakhir   # RiwayatJabatanFungsional | None
+        tt   = dosen.tugas_tambahan_aktif          # TugasTambahan | None
+        mk   = getattr(dosen, "masa_kerja", None)  # MasaKerja | None
+
+        row_data = [
+            # col 1-13
+            row_num,
+            val_or_dash(dosen.nidn),
+            val_or_dash(dosen.nip),
+            dosen.nama_lengkap,
+            dosen.fakultas.nama if dosen.fakultas else "-",
+            dosen.get_status_display(),
+            dosen.get_jenis_kelamin_display(),
+            kpk.pangkat if kpk else "-",
+            kpk.golongan if kpk else "-",
+            fmt_date(kpk.tmt) if kpk else "-",
+            jab.jenjang if jab else "-",
+            fmt_date(jab.tmt) if jab else "-",
+            float(jab.angka_kredit) if (jab and jab.angka_kredit) else "-",
+            # col 14-15 MK CPNS
+            mk.cpns_tahun if mk else "-",
+            mk.cpns_bulan if mk else "-",
+            # col 16-17 MK GOL
+            mk.golongan_tahun if mk else "-",
+            mk.golongan_bulan if mk else "-",
+            # col 18-19 MK JAB
+            mk.jabatan_tahun if mk else "-",
+            mk.jabatan_bulan if mk else "-",
+            # col 20-21 MK KESELURUHAN
+            mk.keseluruhan_tahun if mk else "-",
+            mk.keseluruhan_bulan if mk else "-",
+            # col 22-23 MK PENSIUN
+            mk.pensiun_tahun if mk else "-",
+            mk.pensiun_bulan if mk else "-",
+            # col 24-40
+            val_or_dash(dosen.jurusan_bagian),
+            val_or_dash(dosen.program_studi_nama),
+            val_or_dash(dosen.no_reg_serdos),
+            val_or_dash(dosen.karpeg),
+            fmt_date(dosen.tmt_cpns),
+            fmt_date(dosen.tmt_pns),
+            val_or_dash(dosen.gelar_depan),
+            val_or_dash(dosen.gelar_belakang),
+            val_or_dash(dosen.agama),
+            val_or_dash(dosen.ranting_ilmu),
+            tt.jabatan if tt else "-",
+            val_or_dash(dosen.tingkat_ijazah_bkn),
+            val_or_dash(dosen.tingkat_ijazah_borang),
+            val_or_dash(dosen.tempat_lahir),
+            fmt_date(dosen.tanggal_lahir),
+            dosen.usia_saat_ini or "-",
+            dosen.tahun_pensiun or "-",
+        ]
+
+        # Alignment per kolom
+        aligns = [center] + [left] * 39   # default semua left kecuali NO
+        aligns[0]  = center   # NO
+        aligns[6]  = center   # L/P
+        aligns[8]  = center   # GOL
+        aligns[12] = right    # AK (KUM)
+        aligns[13] = center   # MK cols (14-23)
+        aligns[14] = center
+        aligns[15] = center
+        aligns[16] = center
+        aligns[17] = center
+        aligns[18] = center
+        aligns[19] = center
+        aligns[20] = center
+        aligns[21] = center
+        aligns[22] = center
+        aligns[38] = center   # USIA
+        aligns[39] = center   # PENSIUN
+
+        for col_idx, value in enumerate(row_data, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.font      = Font(name="Arial", size=9)
+            cell.alignment = aligns[col_idx - 1]
+            cell.border    = border
+            if fill:
+                cell.fill = fill
+
+        ws.row_dimensions[row_idx].height = 25
+
+    # ── HTTP Response ────────────────────────────────────────────────────────
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = 'attachment; filename="Data_Dosen_UNTAD.xlsx"'
+    return response
 
 
 # ─── DOSEN DETAIL ─────────────────────────────────────────────────────────────

@@ -13,90 +13,193 @@
     --sidebar-width: 250px;
     --untad-green: #1a5c2a;
     --untad-gold: #c8a227;
+    --topbar-height: 56px;
   }
   body { background: #f4f6f9; font-size: 0.875rem; }
+
+  /* ── SIDEBAR ── */
   .sidebar {
-    width: var(--sidebar-width); height: 100vh; position: fixed;
-    background: var(--untad-green); color: #fff; overflow-y: auto;
-    top: 0; left: 0; z-index: 100; display: flex; flex-direction: column;
+    width: var(--sidebar-width);
+    height: 100vh;
+    position: fixed;
+    background: var(--untad-green);
+    color: #fff;
+    overflow-y: auto;
+    top: 0; left: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease;
   }
+  /* Mobile: sembunyikan sidebar ke kiri */
+  @media (max-width: 767.98px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.show { transform: translateX(0); }
+    .main-wrapper { margin-left: 0 !important; }
+  }
+
+  /* Overlay gelap saat sidebar terbuka di mobile */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 199;
+  }
+  .sidebar-overlay.show { display: block; }
+
   .sidebar-brand {
-    padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.15);
-    background: rgba(0,0,0,0.2); flex-shrink: 0;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.2);
+    flex-shrink: 0;
   }
+  /* Tombol tutup sidebar — hanya mobile */
+  .sidebar-close {
+    display: none;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 1.3rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+  }
+  @media (max-width: 767.98px) { .sidebar-close { display: block; } }
+
   .sidebar-nav { padding: 0.5rem 0; flex: 1; }
   .sidebar-nav .nav-item a {
     display: flex; align-items: center; gap: 0.6rem;
-    padding: 0.5rem 1.2rem; color: rgba(255,255,255,0.8);
-    text-decoration: none; font-size: 0.82rem; transition: all 0.2s;
+    padding: 0.55rem 1.2rem;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 0.82rem;
+    transition: all 0.2s;
     border-left: 3px solid transparent;
   }
   .sidebar-nav .nav-item a:hover,
   .sidebar-nav .nav-item a.active {
-    color: #fff; background: rgba(255,255,255,0.12);
+    color: #fff;
+    background: rgba(255,255,255,0.12);
     border-left-color: var(--untad-gold);
   }
   .sidebar-nav .nav-section {
     padding: 0.85rem 1.2rem 0.25rem;
-    font-size: 0.67rem; text-transform: uppercase;
-    letter-spacing: 0.09em; color: rgba(255,255,255,0.4);
+    font-size: 0.67rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: rgba(255,255,255,0.4);
   }
-  .main-wrapper { margin-left: var(--sidebar-width); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── MAIN WRAPPER ── */
+  .main-wrapper {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOPBAR ── */
   .topbar {
-    background: #fff; border-bottom: 1px solid #e0e4ea;
-    padding: 0 1.5rem; height: 56px; display: flex; align-items: center;
-    justify-content: space-between; position: sticky; top: 0; z-index: 50;
+    background: #fff;
+    border-bottom: 1px solid #e0e4ea;
+    padding: 0 1rem;
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    gap: 0.5rem;
   }
-  .content-area { padding: 1.5rem; flex: 1; }
+  /* Tombol hamburger — hanya mobile */
+  .topbar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    color: #374151;
+    padding: 0.2rem 0.4rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  @media (max-width: 767.98px) { .topbar-toggle { display: block; } }
+
+  /* User info: sembunyikan nama panjang di mobile */
+  .topbar-username { display: none; }
+  @media (min-width: 576px) { .topbar-username { display: inline; } }
+
+  /* Keluar — teks disembunyikan di layar sangat kecil */
+  .topbar-logout-text { display: none; }
+  @media (min-width: 400px) { .topbar-logout-text { display: inline; } }
+
+  /* ── CONTENT ── */
+  .content-area { padding: 1rem; flex: 1; }
+  @media (min-width: 768px) { .content-area { padding: 1.5rem; } }
+
+  /* ── CARDS & TABLE ── */
   .card { border: none; box-shadow: 0 1px 6px rgba(0,0,0,0.07); border-radius: 10px; }
   .card-header { background: #fff; border-bottom: 1px solid #f0f0f0; font-weight: 600; }
-  .stat-card { border-radius: 10px; padding: 1.2rem 1.5rem; color: #fff; }
+  .stat-card { border-radius: 10px; padding: 1rem 1.2rem; color: #fff; }
+  @media (max-width: 575.98px) {
+    .stat-card { padding: 0.75rem 1rem; }
+    .stat-card [style*="font-size:2rem"] { font-size: 1.6rem !important; }
+  }
   .table-sm td, .table-sm th { padding: 0.45rem 0.6rem; vertical-align: middle; }
   .badge-pangkat { font-size: 0.7rem; padding: 0.25em 0.55em; }
   .golongan-badge {
     display: inline-block; min-width: 42px; text-align: center;
     padding: 0.2em 0.5em; border-radius: 4px; font-weight: 700; font-size: 0.78rem;
   }
-  .gol-ive { background: #fef3c7; color: #92400e; }
-  .gol-ivd { background: #fde68a; color: #78350f; }
-  .gol-ivc { background: #fcd34d; color: #78350f; }
-  .gol-ivb { background: #fbbf24; color: #78350f; }
-  .gol-iva { background: #f59e0b; color: #fff; }
-  .gol-iiid { background: #bfdbfe; color: #1e3a8a; }
-  .gol-iiic { background: #93c5fd; color: #1e3a8a; }
-  .gol-iiib { background: #60a5fa; color: #fff; }
-  .gol-iiia { background: #3b82f6; color: #fff; }
-  .gol-iid { background: #d1fae5; color: #065f46; }
-  .gol-iic { background: #a7f3d0; color: #065f46; }
-  .gol-iib { background: #6ee7b7; color: #064e3b; }
-  .gol-iia { background: #34d399; color: #064e3b; }
-  .gol-other { background: #e5e7eb; color: #374151; }
-  .jabatan-gb { color: #7c3aed; font-weight: 600; }
-  .jabatan-lk { color: #2563eb; }
-  .jabatan-l  { color: #0891b2; }
-  .jabatan-aa { color: #059669; }
-  .nav-pills .nav-link { font-size: 0.8rem; padding: 0.4rem 0.9rem; }
-  .table thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; background: #f9fafb; }
-  .btn-xs { padding: 0.15rem 0.45rem; font-size: 0.72rem; }
-  .sidebar-footer { padding: 0.75rem 1.2rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.72rem; color: rgba(255,255,255,0.4); flex-shrink: 0; }
+  .gol-ive { background:#fef3c7;color:#92400e }
+  .gol-ivd { background:#fde68a;color:#78350f }
+  .gol-ivc { background:#fcd34d;color:#78350f }
+  .gol-ivb { background:#fbbf24;color:#78350f }
+  .gol-iva { background:#f59e0b;color:#fff }
+  .gol-iiid { background:#bfdbfe;color:#1e3a8a }
+  .gol-iiic { background:#93c5fd;color:#1e3a8a }
+  .gol-iiib { background:#60a5fa;color:#fff }
+  .gol-iiia { background:#3b82f6;color:#fff }
+  .gol-iid { background:#d1fae5;color:#065f46 }
+  .gol-iic { background:#a7f3d0;color:#065f46 }
+  .gol-iib { background:#6ee7b7;color:#064e3b }
+  .gol-iia { background:#34d399;color:#064e3b }
+  .gol-other { background:#e5e7eb;color:#374151 }
+  .jabatan-gb { color:#7c3aed;font-weight:600 }
+  .jabatan-lk { color:#2563eb }
+  .jabatan-l  { color:#0891b2 }
+  .jabatan-aa { color:#059669 }
+  .nav-pills .nav-link { font-size:0.8rem;padding:0.4rem 0.9rem }
+  .table thead th { font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280;background:#f9fafb }
+  .btn-xs { padding:0.15rem 0.45rem;font-size:0.72rem }
+  .sidebar-footer { padding:0.75rem 1.2rem;border-top:1px solid rgba(255,255,255,0.1);font-size:0.72rem;color:rgba(255,255,255,0.4);flex-shrink:0 }
 </style>
 </head>
 <body>
 
 {% if user.is_authenticated %}
+
+<!-- Overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="sidebar-brand d-flex align-items-center gap-2">
-    <img src="{% static 'logo/untad.png' %}" 
-         alt="Logo UNTAD" 
-         width="40" 
-         height="40" 
-         style="border-radius:8px;flex-shrink:0;object-fit:contain">
-    <div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand d-flex align-items-center justify-content-between gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <img src="{% static 'logo/untad.png' %}"
+           alt="Logo UNTAD"
+           width="40" height="40"
+           style="border-radius:8px;flex-shrink:0;object-fit:contain">
+      <div>
         <div style="font-weight:700;font-size:0.85rem;line-height:1.2">SIMPEG</div>
         <div style="font-size:0.68rem;opacity:0.65">Universitas Tadulako</div>
+      </div>
     </div>
+    <button class="sidebar-close" id="sidebarClose" aria-label="Tutup menu">
+      <i class="bi bi-x-lg"></i>
+    </button>
   </div>
 
   <nav class="sidebar-nav">
@@ -148,19 +251,30 @@
 
 <!-- MAIN WRAPPER -->
 <div class="main-wrapper">
+
   <!-- TOPBAR -->
   <div class="topbar">
-    <div class="d-flex align-items-center gap-2 text-muted" style="font-size:0.85rem">
-      <i class="bi bi-chevron-right"></i>
-      {% block page_title %}Dashboard{% endblock %}
+    <div class="d-flex align-items-center gap-2">
+      <!-- Hamburger: hanya muncul di mobile -->
+      <button class="topbar-toggle" id="sidebarToggle" aria-label="Buka menu">
+        <i class="bi bi-list"></i>
+      </button>
+      <span class="text-muted" style="font-size:0.85rem">
+        <i class="bi bi-chevron-right me-1"></i>{% block page_title %}Dashboard{% endblock %}
+      </span>
     </div>
-    <div class="d-flex align-items-center gap-3">
+
+    <div class="d-flex align-items-center gap-2">
       <span class="badge {% if user.is_staff %}bg-danger{% else %}bg-secondary{% endif %}">
         {% if user.is_staff %}Admin{% else %}Viewer{% endif %}
       </span>
-      <span class="fw-semibold" style="font-size:0.85rem">{{ user.get_full_name|default:user.username }}</span>
-      <a href="{% url 'logout' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-box-arrow-right"></i> Keluar
+      <span class="fw-semibold d-flex align-items-center gap-1" style="font-size:0.85rem">
+        <i class="bi bi-person-circle"></i>
+        <span class="topbar-username">{{ user.get_full_name|default:user.username }}</span>
+      </span>
+      <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="topbar-logout-text"> Keluar</span>
       </a>
     </div>
   </div>
@@ -181,12 +295,37 @@
 {% endif %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
-{% block extra_js %}
-
-{% endblock %}
 
 <script>
-// Show entries — reload dengan per_page param
+// ── Sidebar toggle (mobile) ──
+const sidebar      = document.getElementById('sidebar');
+const overlay      = document.getElementById('sidebarOverlay');
+const toggleBtn    = document.getElementById('sidebarToggle');
+const closeBtn     = document.getElementById('sidebarClose');
+
+function openSidebar() {
+  sidebar.classList.add('show');
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  sidebar.classList.remove('show');
+  overlay.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+toggleBtn?.addEventListener('click', openSidebar);
+closeBtn?.addEventListener('click', closeSidebar);
+overlay?.addEventListener('click', closeSidebar);
+
+// Tutup otomatis saat klik nav link di mobile
+sidebar?.querySelectorAll('.nav-item a').forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth < 768) closeSidebar();
+  });
+});
+
+// ── Show entries ──
 document.getElementById('show-entries')?.addEventListener('change', function() {
   const url = new URL(window.location.href);
   url.searchParams.set('per_page', this.value);
@@ -194,7 +333,7 @@ document.getElementById('show-entries')?.addEventListener('change', function() {
   window.location.href = url.toString();
 });
 
-// Sort client-side — klik header kolom
+// ── Sort client-side ──
 document.querySelectorAll('#duk-table thead tr:first-child th').forEach((th, idx) => {
   th.style.cursor = 'pointer';
   th.dataset.dir = '';
@@ -203,26 +342,17 @@ document.querySelectorAll('#duk-table thead tr:first-child th').forEach((th, idx
     const rows = Array.from(tbody.querySelectorAll('tr'));
     const dir = this.dataset.dir === 'asc' ? 'desc' : 'asc';
     this.dataset.dir = dir;
-
-    // Reset ikon semua kolom
-    document.querySelectorAll('#duk-table thead tr:first-child th').forEach(t => {
-      t.querySelector('.sort-icon')?.remove();
-    });
-    // Tambah ikon di kolom aktif
+    document.querySelectorAll('#duk-table thead tr:first-child th').forEach(t => t.querySelector('.sort-icon')?.remove());
     const icon = document.createElement('span');
     icon.className = 'sort-icon ms-1 text-warning';
     icon.textContent = dir === 'asc' ? '↑' : '↓';
     this.appendChild(icon);
-
     rows.sort((a, b) => {
       const aVal = a.querySelectorAll('td')[idx]?.textContent.trim() || '';
       const bVal = b.querySelectorAll('td')[idx]?.textContent.trim() || '';
-      // Coba numerik dulu
       const aNum = parseFloat(aVal.replace(/[^0-9.-]/g, ''));
       const bNum = parseFloat(bVal.replace(/[^0-9.-]/g, ''));
-      if (!isNaN(aNum) && !isNaN(bNum)) {
-        return dir === 'asc' ? aNum - bNum : bNum - aNum;
-      }
+      if (!isNaN(aNum) && !isNaN(bNum)) return dir === 'asc' ? aNum - bNum : bNum - aNum;
       return dir === 'asc' ? aVal.localeCompare(bVal, 'id') : bVal.localeCompare(aVal, 'id');
     });
     rows.forEach(r => tbody.appendChild(r));
@@ -230,37 +360,26 @@ document.querySelectorAll('#duk-table thead tr:first-child th').forEach((th, idx
 });
 </script>
 
+{% block extra_js %}{% endblock %}
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-
 <script>
 $(document).ready(function () {
-    $('#dataTable').DataTable({
-        pageLength: 10,
-        responsive: true,
-        language: {
-            search: "Cari:",
-            lengthMenu: "Tampilkan _MENU_ data",
-            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-            
-            zeroRecords: "Data tidak ditemukan",
-            emptyTable: "Belum ada data untuk ditampilkan",
-            paginate: {
-                first: "Awal",
-                last: "Akhir",
-                next: "›",
-                previous: "‹"
-            }
-        },
-        columnDefs: [
-            {
-                targets: 3, // kolom aksi
-                orderable: false,
-                searchable: false
-            }
-        ]
-    });
+  $('#dataTable').DataTable({
+    pageLength: 10,
+    responsive: true,
+    language: {
+      search: "Cari:",
+      lengthMenu: "Tampilkan _MENU_ data",
+      info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+      zeroRecords: "Data tidak ditemukan",
+      emptyTable: "Belum ada data untuk ditampilkan",
+      paginate: { first:"Awal", last:"Akhir", next:"›", previous:"‹" }
+    },
+    columnDefs: [{ targets: 3, orderable: false, searchable: false }]
+  });
 });
 </script>
 </body>

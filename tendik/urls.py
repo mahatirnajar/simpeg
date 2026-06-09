@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('dashboard/', views.dashboard_tendik, name='dashboard_tendik'),
+    path('export/excel/', views.export_excel, name='tendik_export_excel'),
 
     # Tendik CRUD
     path('baru/',        views.tendik_create, name='tendik_create'),
