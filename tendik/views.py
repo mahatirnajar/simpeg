@@ -74,7 +74,10 @@ def dashboard_tendik(request):
         })
         no += 1
 
-    paginator = Paginator(rows, 25)
+    per_page = int(request.GET.get('per_page', 10))
+    if per_page > 9000:
+        per_page = len(rows)
+    paginator = Paginator(rows, per_page or 10)
     page_obj  = paginator.get_page(request.GET.get('page'))
 
     # Stats
@@ -87,6 +90,7 @@ def dashboard_tendik(request):
 
     context = {
         'page_obj': page_obj,
+        'per_page': str(per_page),
         'total_tendik': total,
         'pns_count': pns_count,
         'cpns_count': cpns_count,

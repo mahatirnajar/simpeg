@@ -90,7 +90,11 @@ def dashboard(request):
         })
         no += 1
 
-    paginator = Paginator(rows, 25)
+    per_page = int(request.GET.get('per_page', 10))
+    if per_page > 9000:
+        per_page = len(rows)
+    paginator = Paginator(rows, per_page or 10)
+    
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -108,6 +112,7 @@ def dashboard(request):
 
     context = {
         'page_obj': page_obj,
+        'per_page': str(per_page),
         'total_dosen': total,
         'by_fakultas': by_fakultas,
         'gb_count': gb_count,
@@ -201,7 +206,7 @@ def kepangkatan_add(request, dosen_pk):
     else:
         form = RiwayatKepangkatanForm()
     return render(request, 'dosen/riwayat_form.html', {
-        'form': form, 'dosen': dosen, 'title': 'Tambah Riwayat Kepangkatan'
+        'form': form, 'dosen': dosen, 'title': 'Tambah Riwayat Kepangkatan',
     })
 
 
