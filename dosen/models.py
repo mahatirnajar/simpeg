@@ -100,7 +100,10 @@ class Dosen(models.Model):
                 (today.month, today.day) < (self.tanggal_lahir.month, self.tanggal_lahir.day)
             )
         return None
-
+    
+    @property
+    def status_terakhir(self):
+        return self.riwayat_status.order_by('-tanggal_mulai').first()
 
 class RiwayatKepangkatan(models.Model):
     dosen = models.ForeignKey(Dosen, on_delete=models.CASCADE, related_name='riwayat_kepangkatan')
@@ -179,3 +182,43 @@ class MasaKerja(models.Model):
 
     def __str__(self):
         return f"Masa Kerja {self.dosen.nama_lengkap}"
+
+
+class RiwayatStatusDosen(models.Model):
+    STATUS_CHOICES = [
+        ('AKTIF', 'Aktif'),
+        ('CUTI', 'Cuti'),
+        ('TUGAS_BELAJAR', 'Tugas Belajar'),
+        ('IZIN_BELAJAR', 'Izin Belajar'),
+        ('CLTN', 'CLTN'),
+        ('PENSIUN', 'Pensiun'),
+        ('MENINGGAL', 'Meninggal'),
+        ('PINDAH', 'Pindah Instansi'),
+        ('BERHENTI', 'Berhenti'),
+    ]
+
+    dosen = models.ForeignKey(
+        Dosen,
+        on_delete=models.CASCADE,
+        related_name='riwayat_status'
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES
+    )
+
+    tanggal_mulai = models.DateField()
+    tanggal_akhir = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    no_sk = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    keterangan = models.TextField(
+        blank=True
+    )

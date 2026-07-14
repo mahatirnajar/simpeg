@@ -1,5 +1,5 @@
 from django import forms
-from .models import Dosen, RiwayatKepangkatan, RiwayatJabatanFungsional, RiwayatPendidikan, TugasTambahan, MasaKerja, Fakultas
+from .models import *
 
 
 class DosenForm(forms.ModelForm):
@@ -105,4 +105,34 @@ class FakultasForm(forms.ModelForm):
         widgets = {
             'kode': forms.TextInput(attrs={'class': 'form-control'}),
             'nama': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class RiwayatStatusDosenForm(forms.ModelForm):
+    class Meta:
+        model = RiwayatStatusDosen
+        exclude = ['dosen']
+
+        widgets = {
+            'status': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+
+            'tanggal_mulai': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+
+            'tanggal_akhir': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+
+            'no_sk': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+
+            'keterangan': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
         }

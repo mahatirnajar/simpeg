@@ -13,8 +13,6 @@
         <tr>
           <th>Kode</th>
           <th>Nama Unit Kerja</th>
-          <th>Jenis</th>
-          <th>Unit Induk</th>
           <th class="text-center">Jml. Tendik</th>
           <th class="text-center">Aksi</th>
         </tr>
@@ -24,8 +22,6 @@
         <tr>
           <td><span class="badge bg-primary">{{ u.kode }}</span></td>
           <td>{{ u.nama }}</td>
-          <td><span class="badge bg-secondary bg-opacity-50 text-dark">{{ u.get_jenis_display }}</span></td>
-          <td>{{ u.induk.nama|default:"-" }}</td>
           <td class="text-center">{{ u.jumlah_tendik }}</td>
           <td class="text-center"><a href="{% url 'unit_kerja_edit' u.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
         </tr>

@@ -39,7 +39,7 @@
 <div class="card mb-3">
   <div class="card-body py-2">
     <form method="get" class="row g-2 align-items-end">
-      <div class="col-12 col-sm-6 col-md-2">
+      <div class="col-12 col-sm-6 col-md-4">
         <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Cari Tendik</label>
         <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Nama / NIP...">
       </div>
@@ -52,15 +52,7 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-12 col-sm-6 col-md-2">
-        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Fakultas</label>
-        <select name="fakultas" class="form-select form-select-sm">
-          <option value="">Semua</option>
-          {% for fak in fakultas_list %}
-          <option value="{{ fak.pk }}" {% if fakultas_id == fak.pk|stringformat:"s" %}selected{% endif %}>{{ fak.kode }}</option>
-          {% endfor %}
-        </select>
-      </div>
+      
       <div class="col-12 col-sm-6 col-md-2">
         <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Status</label>
         <select name="status" class="form-select form-select-sm">
@@ -68,6 +60,7 @@
           <option value="PNS"  {% if status_filter == 'PNS'  %}selected{% endif %}>PNS</option>
           <option value="CPNS" {% if status_filter == 'CPNS' %}selected{% endif %}>CPNS</option>
           <option value="PPPK" {% if status_filter == 'PPPK' %}selected{% endif %}>PPPK</option>
+          <option value="PTT" {% if status_filter == 'PTT' %}selected{% endif %}>PTT</option>
         </select>
       </div>
       <div class="col-12 col-md-auto d-flex flex-wrap gap-2">

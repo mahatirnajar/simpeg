@@ -10,16 +10,8 @@ import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-
-
-from .models import (
-    Dosen, Fakultas, RiwayatKepangkatan, RiwayatJabatanFungsional,
-    RiwayatPendidikan, TugasTambahan, MasaKerja
-)
-from .forms import (
-    DosenForm, RiwayatKepangkatanForm, RiwayatJabatanFungsionalForm,
-    RiwayatPendidikanForm, TugasTambahanForm, MasaKerjaForm, FakultasForm
-)
+from .models import *
+from .forms import *
 
 
 def is_admin(user):
@@ -656,3 +648,64 @@ def fakultas_edit(request, pk):
     else:
         form = FakultasForm(instance=fak)
     return render(request, 'dosen/riwayat_form.html', {'form': form, 'title': f'Edit Fakultas: {fak.nama}'})
+
+
+@login_required
+def status_dosen_add(request, dosen_id):
+    dosen = get_object_or_404(Dosen, pk=dosen_id)
+
+    if request.method == "POST":
+        form = RiwayatStatusDosenForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.dosen = dosen
+            obj.save()
+
+            messages.success(request, "Riwayat status berhasil ditambahkan.")
+            return redirect('dosen_detail', pk=dosen.pk)
+    else:
+        form = RiwayatStatusDosenForm()
+
+    return render(request, 'dosen/riwayat_form.html', {
+        'form': form,
+        'dosen': dosen,
+        'judul': 'Tambah Riwayat Status'
+    })
+
+
+@login_required
+def status_dosen_edit(request, pk):
+    obj = get_object_or_404(RiwayatStatusDosen, pk=pk)
+
+    if request.method == "POST":
+        form = RiwayatStatusDosenForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+
+            messages.success(request, "Riwayat status berhasil diperbarui.")
+            return redirect('dosen_detail', pk=obj.dosen.pk)
+    else:
+        form = RiwayatStatusDosenForm(instance=obj)
+
+    return render(request, 'dosen/riwayat_form.html', {
+        'form': form,
+        'dosen': obj.dosen,
+        'judul': 'Edit Riwayat Status'
+    })
+
+
+@login_required
+def status_dosen_delete(request, pk):
+    obj = get_object_or_404(RiwayatStatusDosen, pk=pk)
+
+    if request.method == 'POST':
+        dosen_pk = obj.dosen.pk
+        obj.delete()
+
+        messages.success(request, "Riwayat status berhasil dihapus.")
+        return redirect('dosen_detail', pk=dosen_pk)
+
+    return render(request, 'dosen/confirm_delete.html', {
+        'obj': obj,
+        'judul': 'Hapus Riwayat Status'
+    })

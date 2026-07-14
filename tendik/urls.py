@@ -1,15 +1,16 @@
 from django.urls import path
 from . import views
+from dosen.riwayat_hidup import riwayat_hidup_tendik
 
 urlpatterns = [
-    path('dashboard/', views.dashboard_tendik, name='dashboard_tendik'),
-    path('export/excel/', views.export_excel, name='tendik_export_excel'),
+    path('dashboard/',       views.dashboard_tendik,  name='dashboard_tendik'),
+    path('export/excel/',    views.export_excel,       name='tendik_export_excel'),
 
     # Tendik CRUD
-    path('baru/',        views.tendik_create, name='tendik_create'),
-    path('<int:pk>/',    views.tendik_detail, name='tendik_detail'),
-    path('<int:pk>/edit/',  views.tendik_edit,   name='tendik_edit'),
-    path('<int:pk>/hapus/', views.tendik_delete,  name='tendik_delete'),
+    path('baru/',               views.tendik_create, name='tendik_create'),
+    path('<int:pk>/',           views.tendik_detail, name='tendik_detail'),
+    path('<int:pk>/edit/',      views.tendik_edit,   name='tendik_edit'),
+    path('<int:pk>/hapus/',     views.tendik_delete, name='tendik_delete'),
 
     # Kepangkatan
     path('<int:tendik_pk>/kepangkatan/tambah/', views.kepangkatan_tendik_add,    name='kepangkatan_tendik_add'),
@@ -35,11 +36,11 @@ urlpatterns = [
     path('tugas/<int:pk>/edit/',          views.tugas_tendik_edit,   name='tugas_tendik_edit'),
     path('tugas/<int:pk>/hapus/',         views.tugas_tendik_delete, name='tugas_tendik_delete'),
 
-    # Masa Kerja
-    path('<int:tendik_pk>/masa-kerja/', views.masa_kerja_tendik_edit, name='masa_kerja_tendik_edit'),
-
     # Unit Kerja
-    path('unit-kerja/',          views.unit_kerja_list,   name='unit_kerja_list'),
-    path('unit-kerja/baru/',     views.unit_kerja_create, name='unit_kerja_create'),
-    path('unit-kerja/<int:pk>/edit/', views.unit_kerja_edit, name='unit_kerja_edit'),
+    path('unit-kerja/',                views.unit_kerja_list,   name='unit_kerja_list'),
+    path('unit-kerja/baru/',           views.unit_kerja_create, name='unit_kerja_create'),
+    path('unit-kerja/<int:pk>/edit/',  views.unit_kerja_edit,   name='unit_kerja_edit'),
+    
+    # Riwayat Hidup
+    path('<int:pk>/riwayat-hidup/', riwayat_hidup_tendik, name='tendik_riwayat_hidup'),
 ]

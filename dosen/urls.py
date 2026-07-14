@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .riwayat_hidup import riwayat_hidup_dosen
 
 urlpatterns = [
     path('', views.login_view, name='login'),
@@ -38,4 +39,12 @@ urlpatterns = [
     path('fakultas/', views.fakultas_list, name='fakultas_list'),
     path('fakultas/baru/', views.fakultas_create, name='fakultas_create'),
     path('fakultas/<int:pk>/edit/', views.fakultas_edit, name='fakultas_edit'),
+    
+    # Status Dosen
+    path('dosen/<int:dosen_id>/status/add/',views.status_dosen_add,name='status_dosen_add'),
+    path('status/<int:pk>/edit/',views.status_dosen_edit,name='status_dosen_edit'),
+    path('status/<int:pk>/delete/',views.status_dosen_delete,name='status_dosen_delete'),
+    
+    # Riwayat Hidup
+    path('dosen/<int:pk>/riwayat-hidup/', riwayat_hidup_dosen, name='dosen_riwayat_hidup'),
 ]
