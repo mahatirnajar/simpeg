@@ -709,3 +709,62 @@ def status_dosen_delete(request, pk):
         'obj': obj,
         'judul': 'Hapus Riwayat Status'
     })
+
+@login_required
+@user_passes_test(is_admin)
+def keluarga_add(request, dosen_id):
+    dosen = get_object_or_404(Dosen, pk=dosen_id)
+
+    if request.method == "POST":
+        form = KeluargaDosenForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.dosen = dosen
+            obj.save()
+            messages.success(request, "Data keluarga berhasil ditambahkan.")
+            return redirect('dosen_detail', pk=dosen.pk)
+    else:
+        form = KeluargaDosenForm()
+
+    return render(request, 'dosen/riwayat_form.html', {
+        'form': form,
+        'dosen': dosen,
+        'title': 'Tambah Data Keluarga'
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def keluarga_edit(request, pk):
+    obj = get_object_or_404(KeluargaDosen, pk=pk)
+
+    if request.method == "POST":
+        form = KeluargaDosenForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Data keluarga berhasil diperbarui.")
+            return redirect('dosen_detail', pk=obj.dosen.pk)
+    else:
+        form = KeluargaDosenForm(instance=obj)
+
+    return render(request, 'dosen/riwayat_form.html', {
+        'form': form,
+        'dosen': obj.dosen,
+        'title': 'Edit Data Keluarga'
+    })
+
+
+@login_required
+def keluarga_delete(request, pk):
+    obj = get_object_or_404(KeluargaDosen, pk=pk)
+
+    if request.method == 'POST':
+        dosen_pk = obj.dosen.pk
+        obj.delete()
+        messages.success(request, "Data keluarga berhasil dihapus.")
+        return redirect('dosen_detail', pk=dosen_pk)
+
+    return render(request, 'dosen/confirm_delete.html', {
+        'obj': obj,
+        'title': 'Hapus Data Keluarga'
+    })

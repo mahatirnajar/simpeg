@@ -235,3 +235,27 @@ class RiwayatStatusDosen(models.Model):
     keterangan = models.TextField(
         blank=True
     )
+
+class KeluargaDosen(models.Model):
+    STATUS_HUBUNGAN_CHOICES = [
+        ('SUAMI', 'Suami'),
+        ('ISTRI', 'Istri'),
+        ('ANAK', 'Anak'),
+    ]
+
+    dosen = models.ForeignKey(
+        Dosen, 
+        on_delete=models.CASCADE, 
+        related_name='keluarga'
+    )
+    nama = models.CharField(max_length=200)
+    status_hubungan = models.CharField(max_length=20, choices=STATUS_HUBUNGAN_CHOICES)
+    tanggal_lahir = models.DateField(null=True, blank=True)
+    pekerjaan = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['status_hubungan', 'tanggal_lahir']
+
+    def __str__(self):
+        return f"{self.nama} ({self.get_status_hubungan_display()})"

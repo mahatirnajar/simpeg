@@ -44,6 +44,12 @@ urlpatterns = [
     path('dosen/<int:dosen_id>/status/add/',views.status_dosen_add,name='status_dosen_add'),
     path('status/<int:pk>/edit/',views.status_dosen_edit,name='status_dosen_edit'),
     path('status/<int:pk>/delete/',views.status_dosen_delete,name='status_dosen_delete'),
+
+    # Keluarga
+    path('dosen/<int:dosen_id>/keluarga/tambah/', views.keluarga_add, name='keluarga_add'),
+    path('keluarga/<int:pk>/edit/', views.keluarga_edit, name='keluarga_edit'),
+    path('keluarga/<int:pk>/hapus/', views.keluarga_delete, name='keluarga_delete'),
+    
     
     # Riwayat Hidup
     path('dosen/<int:pk>/riwayat-hidup/', riwayat_hidup_dosen, name='dosen_riwayat_hidup'),

@@ -141,3 +141,18 @@ class RiwayatStatusDosenForm(forms.ModelForm):
                 'rows': 3
             }),
         }
+
+class KeluargaDosenForm(forms.ModelForm):
+    class Meta:
+        model = KeluargaDosen
+        exclude = ['dosen', 'created_at']
+
+        widgets = {
+            'nama': forms.TextInput(attrs={'class': 'form-control'}),
+            'status_hubungan': forms.Select(attrs={'class': 'form-select'}),
+            'tanggal_lahir': forms.DateInput(attrs={
+                'type': 'date', 
+                'class': 'form-control'
+            }),
+            'pekerjaan': forms.TextInput(attrs={'class': 'form-control'}),
+        }
