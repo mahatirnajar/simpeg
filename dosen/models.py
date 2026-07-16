@@ -197,6 +197,15 @@ class RiwayatStatusDosen(models.Model):
         ('BERHENTI', 'Berhenti'),
     ]
 
+    JENIS_CUTI_CHOICES = [
+        ('TAHUNAN', 'Cuti Tahunan'),
+        ('BESAR', 'Cuti Besar'),
+        ('SAKIT', 'Cuti Sakit'),
+        ('MELAHIRKAN', 'Cuti Melahirkan'),
+        ('ALASAN_PENTING', 'Cuti Karena Alasan Penting'),
+        ('DILUAR_TANGGUNGAN_NEGARA', 'Cuti di Luar Tanggungan Negara'),
+    ]
+
     dosen = models.ForeignKey(
         Dosen,
         on_delete=models.CASCADE,
@@ -207,6 +216,10 @@ class RiwayatStatusDosen(models.Model):
         max_length=30,
         choices=STATUS_CHOICES
     )
+    jenis_cuti = models.CharField(max_length=50, 
+                                  choices=JENIS_CUTI_CHOICES, 
+                                  null=True, 
+                                  blank=True)
 
     tanggal_mulai = models.DateField()
     tanggal_akhir = models.DateField(

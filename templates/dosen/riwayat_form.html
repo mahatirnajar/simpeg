@@ -24,4 +24,32 @@
     </form>
   </div>
 </div>
+
+<!-- Tambahkan script ini di bagian bawah template -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const statusSelect = document.getElementById('id_status');
+    const jenisCutiSelect = document.getElementById('id_jenis_cuti');
+
+    if (statusSelect && jenisCutiSelect) {
+        // Ambil elemen div pembungkus (mb-3) agar label juga ikut tersembunyi
+        const jenisCutiWrapper = jenisCutiSelect.closest('.mb-3');
+
+        function toggleJenisCuti() {
+            if (statusSelect.value === 'CUTI') {
+                jenisCutiWrapper.style.display = 'block';
+            } else {
+                jenisCutiWrapper.style.display = 'none';
+                jenisCutiSelect.value = ''; // Reset nilai ketika bukan cuti
+            }
+        }
+
+        // Panggil fungsi sekali saat halaman dimuat
+        toggleJenisCuti();
+
+        // Tambahkan event listener saat user mengganti pilihan status
+        statusSelect.addEventListener('change', toggleJenisCuti);
+    }
+});
+</script>
 {% endblock %}

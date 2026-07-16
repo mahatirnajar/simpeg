@@ -117,6 +117,11 @@ class RiwayatStatusDosenForm(forms.ModelForm):
                 'class': 'form-select'
             }),
 
+            'jenis_cuti': forms.Select(attrs={
+                'class': 'form-select', 
+                'id': 'id_jenis_cuti'
+            }),
+
             'tanggal_mulai': forms.DateInput(attrs={
                 'type': 'date',
                 'class': 'form-control'
