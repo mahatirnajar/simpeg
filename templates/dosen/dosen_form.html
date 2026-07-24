@@ -47,9 +47,14 @@
         <div class="col-md-3"><label class="form-label">{{ form.tmt_pns.label }}</label>{{ form.tmt_pns }}</div>
         <div class="col-md-3"><label class="form-label">{{ form.tingkat_ijazah_bkn.label }}</label>{{ form.tingkat_ijazah_bkn }}</div>
         <div class="col-md-3"><label class="form-label">{{ form.tingkat_ijazah_borang.label }}</label>{{ form.tingkat_ijazah_borang }}</div>
-        <div class="col-md-6"><label class="form-label">{{ form.ranting_ilmu.label }}</label>{{ form.ranting_ilmu }}</div>
+        <div class="col-md-3"><label class="form-label">{{ form.ranting_ilmu.label }}</label>{{ form.ranting_ilmu }}</div>
         <div class="col-md-3"><label class="form-label">{{ form.usia_pensiun.label }}</label>{{ form.usia_pensiun }}</div>
         <div class="col-md-3"><label class="form-label">{{ form.tahun_pensiun.label }}</label>{{ form.tahun_pensiun }}</div>
+        <div class="col-md-3">
+          <label class="form-label">{{ form.tmt_pensiun.label }}</label>
+          {{ form.tmt_pensiun }}
+          <div class="form-text" style="font-size:0.7rem">Otomatis terisi saat dosen baru dibuat, bisa diubah manual di sini.</div>
+        </div>
 
         {% if form.errors %}
         <div class="col-12">

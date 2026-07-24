@@ -10,6 +10,7 @@ class DosenForm(forms.ModelForm):
             'tanggal_lahir': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'tmt_cpns': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'tmt_pns': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'tmt_pensiun': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'nama_lengkap': forms.TextInput(attrs={'class': 'form-control'}),
             'nama_terang': forms.TextInput(attrs={'class': 'form-control'}),
             'gelar_depan': forms.TextInput(attrs={'class': 'form-control'}),
@@ -35,7 +36,6 @@ class DosenForm(forms.ModelForm):
             'usia_pensiun': forms.NumberInput(attrs={'class': 'form-control'}),
             'tahun_pensiun': forms.NumberInput(attrs={'class': 'form-control'}),
         }
-
 
 class RiwayatKepangkatanForm(forms.ModelForm):
     class Meta:

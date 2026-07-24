@@ -232,6 +232,17 @@
           {% endif %}
         </div>
 
+        <div class="col-md-4">
+          <label class="form-label">{{ form.tmt_pensiun.label }}</label>
+          {{ form.tmt_pensiun }}
+
+          {% if form.tmt_pensiun.help_text %}
+            <small class="text-muted d-block">
+              {{ form.tmt_pensiun.help_text }}
+            </small>
+          {% endif %}
+        </div>
+
         <!-- ERROR -->
         {% if form.errors %}
         <div class="col-12">

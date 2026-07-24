@@ -49,6 +49,7 @@ def dashboard(request):
     jabatan_filter = request.GET.get('jabatan', '')
 
     STATUS_TIDAK_AKTIF = ['PENSIUN', 'MENINGGAL', 'BERHENTI', 'PINDAH']
+    today = timezone.localdate()
 
     dosen_qs = Dosen.objects.select_related('fakultas').prefetch_related(
         'riwayat_kepangkatan', 'riwayat_jabatan_fungsional',
@@ -72,7 +73,14 @@ def dashboard(request):
     no = 1
     for d in dosen_qs:
         status_terakhir = d.status_terakhir
+
+        # Keluarkan dari Dashboard jika:
+        # 1) sudah tercatat status tidak aktif resmi (SK sudah diproses admin), ATAU
+        # 2) sudah mencapai TMT Pensiun (BUP) — meskipun SK BELUM diproses,
+        #    dosen tetap otomatis pindah ke halaman Dosen Berhenti dengan status "Belum Diproses"
         if status_terakhir and status_terakhir.status in STATUS_TIDAK_AKTIF:
+            continue
+        if d.sudah_bup:
             continue
 
         kp = d.kepangkatan_terakhir
@@ -101,14 +109,22 @@ def dashboard(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Stats — hanya dosen aktif (bukan pensiun/meninggal/berhenti/pindah)
-    dosen_tidak_aktif_ids = RiwayatStatusDosen.objects.filter(
-        status__in=STATUS_TIDAK_AKTIF
-    ).values_list('dosen_id', flat=True)
+    # Stats — hanya dosen aktif (bukan pensiun/meninggal/berhenti/pindah, dan belum lewat BUP)
+    dosen_tidak_aktif_ids = set(
+        RiwayatStatusDosen.objects.filter(
+            status__in=STATUS_TIDAK_AKTIF
+        ).values_list('dosen_id', flat=True)
+    )
+    dosen_sudah_bup_ids = set(
+        Dosen.objects.filter(
+            tmt_pensiun__isnull=False, tmt_pensiun__lte=today
+        ).values_list('pk', flat=True)
+    )
+    exclude_ids = dosen_tidak_aktif_ids | dosen_sudah_bup_ids
 
-    total = Dosen.objects.exclude(pk__in=dosen_tidak_aktif_ids).count()
+    total = Dosen.objects.exclude(pk__in=exclude_ids).count()
     jabatan_counts = RiwayatJabatanFungsional.objects.exclude(
-        dosen_id__in=dosen_tidak_aktif_ids
+        dosen_id__in=exclude_ids
     ).aggregate(
         gb_count=Count('dosen', filter=Q(jenjang__icontains='Guru Besar'), distinct=True),
         lk_count=Count('dosen', filter=Q(jenjang__icontains='Lektor Kepala'), distinct=True),
@@ -134,7 +150,6 @@ def dashboard(request):
         'is_admin': is_admin(request.user),
     }
     return render(request, 'dosen/dashboard.html', context)
-
 # ─── KENAIKAN PANGKAT ─────────────────────────────────────────────────────────
 
 @login_required
@@ -377,7 +392,7 @@ def export_excel(request):
         return c
 
     # ── Baris 1: Judul ──────────────────────────────────────────────────────
-    TOTAL_COLS = 40
+    TOTAL_COLS = 41
     ws.merge_cells(f"A1:{get_column_letter(TOTAL_COLS)}1")
     tc = ws["A1"]
     tc.value     = "DATA DOSEN UNIVERSITAS TADULAKO"
@@ -415,6 +430,7 @@ def export_excel(request):
         38: ("TGL LAHIR",      13),
         39: ("USIA",            7),
         40: ("PENSIUN",         9),
+        41: ("TMT PENSIUN",    14),
     }
 
     # Kolom dengan sub-header Thn/Bln (merge baris 2, sub di baris 3)
@@ -505,7 +521,7 @@ def export_excel(request):
             # col 22-23 MK PENSIUN
             mk.pensiun_tahun if mk else "-",
             mk.pensiun_bulan if mk else "-",
-            # col 24-40
+            # col 24-41
             val_or_dash(dosen.jurusan_bagian),
             val_or_dash(dosen.program_studi_nama),
             val_or_dash(dosen.no_reg_serdos),
@@ -523,10 +539,11 @@ def export_excel(request):
             fmt_date(dosen.tanggal_lahir),
             dosen.usia_saat_ini or "-",
             dosen.tahun_pensiun or "-",
+            fmt_date(dosen.tmt_pensiun),
         ]
 
         # Alignment per kolom
-        aligns = [center] + [left] * 39   # default semua left kecuali NO
+        aligns = [center] + [left] * 40   # default semua left kecuali NO
         aligns[0]  = center   # NO
         aligns[6]  = center   # L/P
         aligns[8]  = center   # GOL
@@ -543,6 +560,7 @@ def export_excel(request):
         aligns[22] = center
         aligns[38] = center   # USIA
         aligns[39] = center   # PENSIUN
+        aligns[40] = center   # TMT PENSIUN
 
         for col_idx, value in enumerate(row_data, start=1):
             cell = ws.cell(row=row_idx, column=col_idx, value=value)
@@ -565,8 +583,6 @@ def export_excel(request):
     )
     response["Content-Disposition"] = 'attachment; filename="Data_Dosen_UNTAD.xlsx"'
     return response
-
-
 # ─── DOSEN DETAIL ─────────────────────────────────────────────────────────────
 
 @login_required

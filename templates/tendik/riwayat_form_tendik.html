@@ -24,4 +24,27 @@
     </form>
   </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const statusSelect = document.getElementById('id_status');
+    const jenisCutiSelect = document.getElementById('id_jenis_cuti');
+
+    if (statusSelect && jenisCutiSelect) {
+        const jenisCutiWrapper = jenisCutiSelect.closest('.mb-3');
+
+        function toggleJenisCuti() {
+            if (statusSelect.value === 'CUTI') {
+                jenisCutiWrapper.style.display = 'block';
+            } else {
+                jenisCutiWrapper.style.display = 'none';
+                jenisCutiSelect.value = '';
+            }
+        }
+
+        toggleJenisCuti();
+        statusSelect.addEventListener('change', toggleJenisCuti);
+    }
+});
+</script>
 {% endblock %}

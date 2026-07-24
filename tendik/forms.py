@@ -4,8 +4,8 @@ from .models import (
     Tendik, UnitKerja,
     RiwayatKepangkatanTendik, RiwayatJabatanFungsionalTendik,
     JabatanStrukturalTendik, RiwayatPendidikanTendik,
-    TugasTambahanTendik,
-    # [FIX] MasaKerjaTendik DIHAPUS — masa kerja sudah jadi @property di Tendik
+    TugasTambahanTendik, RiwayatBerhentiTendik,
+    RiwayatStatusTendik, KeluargaTendik,
 )
 
 _INPUT  = {'class': 'form-control'}
@@ -127,6 +127,8 @@ class TendikForm(forms.ModelForm):
                 'min': 56,
                 'max': 65
             }),
+
+            'tmt_pensiun': forms.DateInput(attrs=_DATE, format='%Y-%m-%d'),
         }
 
     def __init__(self, *args, **kwargs):
@@ -140,6 +142,10 @@ class TendikForm(forms.ModelForm):
         self.fields['usia_pensiun'].help_text = (
             'PNS biasanya 60 tahun dan PPPK 58 tahun. '
             'Tanggal dan tahun pensiun dihitung otomatis.'
+        )
+
+        self.fields['tmt_pensiun'].help_text = (
+            'Otomatis terisi saat tendik baru dibuat. Bisa diubah manual jika perlu.'
         )
 
         for name, field in self.fields.items():
@@ -244,7 +250,6 @@ class RiwayatJabatanFungsionalTendikForm(forms.ModelForm):
         model = RiwayatJabatanFungsionalTendik
         exclude = ['tendik', 'created_at']
         widgets = {
-            # [FIX] nama_jabatan dan jenjang dipisah (models baru)
             'jenis':        forms.Select(_SELECT),
             'nama_jabatan': forms.TextInput({**_INPUT, 'placeholder': 'Pustakawan / Pranata Komputer / Apoteker / ...'}),
             'jenjang':      forms.Select(_SELECT),
@@ -278,8 +283,8 @@ class RiwayatPendidikanTendikForm(forms.ModelForm):
         widgets = {
             'jenjang':       forms.Select(_SELECT),
             'bidang_studi':  forms.TextInput(_INPUT),
-            'prodi_pddikti': forms.TextInput(_INPUT),  # [FIX] field baru di models v3
-            'fakultas_pt':   forms.TextInput(_INPUT),  # [FIX] field baru di models v3
+            'prodi_pddikti': forms.TextInput(_INPUT),
+            'fakultas_pt':   forms.TextInput(_INPUT),
             'institusi':     forms.TextInput(_INPUT),
             'tahun_lulus':   forms.NumberInput({**_NUMBER, 'min': 1970, 'max': 2030}),
         }
@@ -299,8 +304,43 @@ class TugasTambahanTendikForm(forms.ModelForm):
         }
 
 
-# [FIX] MasaKerjaTendikForm DIHAPUS sepenuhnya
-# Masa kerja sudah otomatis via @property dari tmt_cpns, tmt_pns, kepangkatan_terakhir
+class RiwayatBerhentiTendikForm(forms.ModelForm):
+    class Meta:
+        model = RiwayatBerhentiTendik
+        exclude = ['tendik', 'created_at']
+        widgets = {
+            'alasan':           forms.Select(_SELECT),
+            'tanggal':          forms.DateInput(attrs=_DATE, format='%Y-%m-%d'),
+            'no_sk':            forms.TextInput(_INPUT),
+            'no_telp_keluarga': forms.TextInput(_INPUT),
+            'keterangan':       forms.Textarea(_AREA),
+        }
+
+
+class RiwayatStatusTendikForm(forms.ModelForm):
+    class Meta:
+        model = RiwayatStatusTendik
+        exclude = ['tendik', 'created_at']
+        widgets = {
+            'status': forms.Select(_SELECT),
+            'jenis_cuti': forms.Select({**_SELECT, 'id': 'id_jenis_cuti'}),
+            'tanggal_mulai': forms.DateInput(attrs=_DATE, format='%Y-%m-%d'),
+            'tanggal_akhir': forms.DateInput(attrs=_DATE, format='%Y-%m-%d'),
+            'no_sk': forms.TextInput(_INPUT),
+            'keterangan': forms.Textarea(_AREA),
+        }
+
+
+class KeluargaTendikForm(forms.ModelForm):
+    class Meta:
+        model = KeluargaTendik
+        exclude = ['tendik', 'created_at']
+        widgets = {
+            'nama': forms.TextInput(_INPUT),
+            'status_hubungan': forms.Select(_SELECT),
+            'tanggal_lahir': forms.DateInput(attrs=_DATE, format='%Y-%m-%d'),
+            'pekerjaan': forms.TextInput(_INPUT),
+        }
 
 
 class UnitKerjaForm(forms.ModelForm):

@@ -6,6 +6,11 @@ urlpatterns = [
     path('dashboard/',       views.dashboard_tendik,  name='dashboard_tendik'),
     path('export/excel/',    views.export_excel,       name='tendik_export_excel'),
 
+    # Naik Pangkat & Berhenti
+    path('naik-pangkat/', views.naik_pangkat_tendik_list, name='naik_pangkat_tendik_list'),
+    path('berhenti/',     views.tendik_berhenti_list,     name='tendik_berhenti_list'),
+    path('<int:tendik_pk>/berhenti/proses/', views.tendik_berhenti_add, name='tendik_berhenti_add'),
+
     # Tendik CRUD
     path('baru/',               views.tendik_create, name='tendik_create'),
     path('<int:pk>/',           views.tendik_detail, name='tendik_detail'),
@@ -35,6 +40,16 @@ urlpatterns = [
     path('<int:tendik_pk>/tugas/tambah/', views.tugas_tendik_add,    name='tugas_tendik_add'),
     path('tugas/<int:pk>/edit/',          views.tugas_tendik_edit,   name='tugas_tendik_edit'),
     path('tugas/<int:pk>/hapus/',         views.tugas_tendik_delete, name='tugas_tendik_delete'),
+
+    # Riwayat Status
+    path('<int:tendik_id>/status/tambah/', views.status_tendik_add,    name='status_tendik_add'),
+    path('status/<int:pk>/edit/',          views.status_tendik_edit,   name='status_tendik_edit'),
+    path('status/<int:pk>/hapus/',         views.status_tendik_delete, name='status_tendik_delete'),
+
+    # Keluarga
+    path('<int:tendik_id>/keluarga/tambah/', views.keluarga_tendik_add,    name='keluarga_tendik_add'),
+    path('keluarga/<int:pk>/edit/',          views.keluarga_tendik_edit,   name='keluarga_tendik_edit'),
+    path('keluarga/<int:pk>/hapus/',         views.keluarga_tendik_delete, name='keluarga_tendik_delete'),
 
     # Unit Kerja
     path('unit-kerja/',                views.unit_kerja_list,   name='unit_kerja_list'),

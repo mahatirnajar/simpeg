@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 
 class Fakultas(models.Model):
@@ -67,6 +69,7 @@ class Dosen(models.Model):
 
     usia_pensiun = models.IntegerField(null=True, blank=True, verbose_name="Usia Pensiun")
     tahun_pensiun = models.IntegerField(null=True, blank=True, verbose_name="Tahun Pensiun")
+    tmt_pensiun = models.DateField(null=True, blank=True, verbose_name="TMT Pensiun (BUP)")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -100,10 +103,66 @@ class Dosen(models.Model):
                 (today.month, today.day) < (self.tanggal_lahir.month, self.tanggal_lahir.day)
             )
         return None
-    
+
     @property
     def status_terakhir(self):
         return self.riwayat_status.order_by('-tanggal_mulai').first()
+
+    def _hitung_usia_bup(self):
+        """Usia BUP: pakai field usia_pensiun jika diisi manual,
+        jika tidak: Guru Besar = 70 tahun, selain itu = 65 tahun."""
+        if self.usia_pensiun:
+            return self.usia_pensiun
+        jf = self.jabatan_fungsional_terakhir
+        if jf and 'guru besar' in jf.jenjang.lower():
+            return 70
+        return 65
+
+    def hitung_tmt_pensiun(self):
+        """Hitung TMT Pensiun (tanggal lahir + usia BUP). Tidak menyimpan ke DB."""
+        if not self.tanggal_lahir:
+            return None
+        tahun = self._hitung_usia_bup()
+        try:
+            return self.tanggal_lahir.replace(year=self.tanggal_lahir.year + tahun)
+        except ValueError:
+            return self.tanggal_lahir.replace(month=2, day=28, year=self.tanggal_lahir.year + tahun)
+
+    def save(self, *args, **kwargs):
+        # Auto-hitung tmt_pensiun HANYA jika masih kosong (dosen baru / belum pernah diisi).
+        # Jika admin sudah mengisi/mengubahnya secara manual, nilai itu tidak akan ditimpa.
+        is_new = self.pk is None
+
+        if not is_new and not self.tmt_pensiun:
+            self.tmt_pensiun = self.hitung_tmt_pensiun()
+
+        super().save(*args, **kwargs)
+
+        if is_new and not self.tmt_pensiun and self.tanggal_lahir:
+            tmt = self.hitung_tmt_pensiun()
+            if tmt:
+                Dosen.objects.filter(pk=self.pk).update(tmt_pensiun=tmt)
+                self.tmt_pensiun = tmt
+
+    @property
+    def sudah_bup(self):
+        from datetime import date
+        return bool(self.tmt_pensiun and self.tmt_pensiun <= date.today())
+
+    @property
+    def lama_lewat_bup(self):
+        """(tahun, bulan) sejak mencapai BUP. None jika belum BUP / tmt_pensiun kosong."""
+        from datetime import date
+        if not self.tmt_pensiun:
+            return None
+        today = date.today()
+        if self.tmt_pensiun > today:
+            return None
+        selisih_bulan = (today.year - self.tmt_pensiun.year) * 12 + (today.month - self.tmt_pensiun.month)
+        if today.day < self.tmt_pensiun.day:
+            selisih_bulan -= 1
+        return divmod(max(selisih_bulan, 0), 12)
+
 
 class RiwayatKepangkatan(models.Model):
     dosen = models.ForeignKey(Dosen, on_delete=models.CASCADE, related_name='riwayat_kepangkatan')
@@ -236,6 +295,7 @@ class RiwayatStatusDosen(models.Model):
         blank=True
     )
 
+
 class KeluargaDosen(models.Model):
     STATUS_HUBUNGAN_CHOICES = [
         ('SUAMI', 'Suami'),
@@ -259,3 +319,26 @@ class KeluargaDosen(models.Model):
 
     def __str__(self):
         return f"{self.nama} ({self.get_status_hubungan_display()})"
+
+
+# ── Signal: recalculate tmt_pensiun saat riwayat jabatan fungsional berubah ──
+# (mis. dosen naik jabatan ke Guru Besar -> BUP berubah dari 65 ke 70 tahun,
+# tmt_pensiun dosen terkait harus ikut diperbarui otomatis)
+
+@receiver(post_save, sender=RiwayatJabatanFungsional)
+def _update_tmt_pensiun_on_jabatan_save(sender, instance, **kwargs):
+    dosen = instance.dosen
+    # Hanya isi otomatis jika dosen belum punya tmt_pensiun manual
+    if not dosen.tmt_pensiun:
+        tmt_baru = dosen.hitung_tmt_pensiun()
+        if tmt_baru:
+            Dosen.objects.filter(pk=dosen.pk).update(tmt_pensiun=tmt_baru)
+
+
+@receiver(post_delete, sender=RiwayatJabatanFungsional)
+def _update_tmt_pensiun_on_jabatan_delete(sender, instance, **kwargs):
+    dosen = instance.dosen
+    if not dosen.tmt_pensiun:
+        tmt_baru = dosen.hitung_tmt_pensiun()
+        if tmt_baru:
+            Dosen.objects.filter(pk=dosen.pk).update(tmt_pensiun=tmt_baru)

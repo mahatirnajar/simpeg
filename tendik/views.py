@@ -13,13 +13,15 @@ from .models import (
     Tendik, UnitKerja,
     RiwayatKepangkatanTendik, RiwayatJabatanFungsionalTendik,
     JabatanStrukturalTendik, RiwayatPendidikanTendik,
-    TugasTambahanTendik,
+    TugasTambahanTendik, RiwayatBerhentiTendik,
+    RiwayatStatusTendik, KeluargaTendik,
 )
 from .forms import (
     TendikForm, UnitKerjaForm,
     RiwayatKepangkatanTendikForm, RiwayatJabatanFungsionalTendikForm,
     JabatanStrukturalTendikForm, RiwayatPendidikanTendikForm,
-    TugasTambahanTendikForm,
+    TugasTambahanTendikForm, RiwayatBerhentiTendikForm,
+    RiwayatStatusTendikForm, KeluargaTendikForm,
 )
 
 
@@ -36,8 +38,6 @@ def dashboard_tendik(request):
     status_f    = request.GET.get('status', '')
     jabatan_f   = request.GET.get('jabatan', '')
 
-    # ── nama_lengkap adalah @property, tidak bisa di-filter ORM langsung
-    # ── gunakan nama_terang untuk search di DB, nama_lengkap untuk tampilan
     qs = Tendik.objects.select_related('unit_kerja').prefetch_related(
         'riwayat_kepangkatan',
         'riwayat_jabatan_fungsional',
@@ -60,6 +60,14 @@ def dashboard_tendik(request):
     rows = []
     no = 1
     for t in qs:
+        # Keluarkan dari Dashboard jika sudah punya riwayat berhenti resmi,
+        # ATAU sudah mencapai TMT Pensiun (BUP) — meskipun SK belum diproses,
+        # tendik tetap otomatis pindah ke halaman Tendik Berhenti (status "Belum Diproses")
+        if hasattr(t, 'riwayat_berhenti'):
+            continue
+        if t.sudah_pensiun:
+            continue
+
         kp = t.kepangkatan_terakhir
         jf = t.jabatan_fungsional_terakhir
         js = t.jabatan_struktural_aktif
@@ -71,11 +79,10 @@ def dashboard_tendik(request):
             if not (jf_match or js_match):
                 continue
 
-        # [FIX] masa_kerja sudah jadi @property di Tendik, tidak ada model terpisah
-        mk_k = t.masa_kerja_keseluruhan   # (tahun, bulan)
-        mk_g = t.masa_kerja_golongan       # (tahun, bulan)
-        mk_j = t.masa_kerja_jabatan        # (tahun, bulan)
-        mk_p = t.masa_kerja_pensiun        # (tahun, bulan) — sisa
+        mk_k = t.masa_kerja_keseluruhan
+        mk_g = t.masa_kerja_golongan
+        mk_j = t.masa_kerja_jabatan
+        mk_p = t.masa_kerja_pensiun
 
         rows.append({
             'no': no,
@@ -84,7 +91,6 @@ def dashboard_tendik(request):
             'jabatan_fungsional': jf,
             'jabatan_struktural': js,
             'tugas_tambahan': tt,
-            # masa kerja sebagai tuple (thn, bln) langsung dari property
             'mk_keseluruhan': mk_k,
             'mk_golongan':    mk_g,
             'mk_jabatan':     mk_j,
@@ -99,11 +105,22 @@ def dashboard_tendik(request):
     paginator = Paginator(rows, per_page or 10)
     page_obj  = paginator.get_page(request.GET.get('page'))
 
-    # Stats
-    total       = Tendik.objects.count()
-    pns_count   = Tendik.objects.filter(status='PNS').count()
-    cpns_count  = Tendik.objects.filter(status='CPNS').count()
-    pppk_count  = Tendik.objects.filter(status='PPPK').count()
+    # Stats — hanya tendik aktif (belum berhenti, belum lewat BUP)
+    tendik_berhenti_ids = set(
+        Tendik.objects.exclude(riwayat_berhenti__isnull=True).values_list('pk', flat=True)
+    )
+    today = date.today()
+    tendik_sudah_bup_ids = set(
+        Tendik.objects.filter(
+            tmt_pensiun__isnull=False, tmt_pensiun__lte=today
+        ).values_list('pk', flat=True)
+    )
+    exclude_ids = tendik_berhenti_ids | tendik_sudah_bup_ids
+
+    total       = Tendik.objects.exclude(pk__in=exclude_ids).count()
+    pns_count   = Tendik.objects.exclude(pk__in=exclude_ids).filter(status='PNS').count()
+    cpns_count  = Tendik.objects.exclude(pk__in=exclude_ids).filter(status='CPNS').count()
+    pppk_count  = Tendik.objects.exclude(pk__in=exclude_ids).filter(status='PPPK').count()
     by_unit     = UnitKerja.objects.annotate(jumlah=Count('tendik')).filter(jumlah__gt=0).order_by('-jumlah')
 
     context = {
@@ -122,6 +139,293 @@ def dashboard_tendik(request):
         'is_admin':      is_admin(request.user),
     }
     return render(request, 'tendik/dashboard_tendik.html', context)
+
+
+# ─── NAIK PANGKAT TENDIK ──────────────────────────────────────────────────────
+
+@login_required
+def naik_pangkat_tendik_list(request):
+    search  = request.GET.get('q', '')
+    unit_id = request.GET.get('unit', '')
+
+    today = date.today()
+    try:
+        batas_tmt = today.replace(year=today.year - 4)
+    except ValueError:
+        batas_tmt = today.replace(month=2, day=28, year=today.year - 4)
+
+    qs = Tendik.objects.select_related('unit_kerja').prefetch_related(
+        'riwayat_kepangkatan', 'riwayat_jabatan_fungsional'
+    )
+
+    if search:
+        qs = qs.filter(
+            Q(nama_terang__icontains=search) |
+            Q(nip__icontains=search) |
+            Q(gelar_belakang__icontains=search) |
+            Q(gelar_depan__icontains=search)
+        )
+    if unit_id:
+        qs = qs.filter(unit_kerja_id=unit_id)
+
+    def lama_menjabat(tmt, hari_ini):
+        years = hari_ini.year - tmt.year
+        months = hari_ini.month - tmt.month
+        if hari_ini.day < tmt.day:
+            months -= 1
+        if months < 0:
+            years -= 1
+            months += 12
+        return years, months
+
+    rows = []
+    no = 1
+    for t in qs:
+        if hasattr(t, 'riwayat_berhenti'):
+            continue
+
+        kp = t.kepangkatan_terakhir
+        if not kp or not kp.tmt:
+            continue
+        if kp.tmt > batas_tmt:
+            continue
+
+        lama_tahun, lama_bulan = lama_menjabat(kp.tmt, today)
+
+        rows.append({
+            'no': no,
+            'tendik': t,
+            'kepangkatan': kp,
+            'jabatan_fungsional': t.jabatan_fungsional_terakhir,
+            'lama_tahun': lama_tahun,
+            'lama_bulan': lama_bulan,
+        })
+        no += 1
+
+    per_page = int(request.GET.get('per_page', 25))
+    if per_page > 9000:
+        per_page = len(rows) or 1
+    paginator = Paginator(rows, per_page or 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'page_obj': page_obj,
+        'total_eligible': len(rows),
+        'unit_list': UnitKerja.objects.all().order_by('nama'),
+        'search': search,
+        'unit_id': unit_id,
+        'is_admin': is_admin(request.user),
+    }
+    return render(request, 'tendik/naik_pangkat_list_tendik.html', context)
+
+
+# ─── TENDIK BERHENTI / PENSIUN ─────────────────────────────────────────────────
+
+@login_required
+def tendik_berhenti_list(request):
+    search  = request.GET.get('q', '')
+    unit_id = request.GET.get('unit', '')
+
+    today = date.today()
+
+    qs = Tendik.objects.select_related('unit_kerja').prefetch_related(
+        'riwayat_jabatan_fungsional'
+    )
+
+    if search:
+        qs = qs.filter(
+            Q(nama_terang__icontains=search) |
+            Q(nip__icontains=search) |
+            Q(gelar_belakang__icontains=search) |
+            Q(gelar_depan__icontains=search)
+        )
+    if unit_id:
+        qs = qs.filter(unit_kerja_id=unit_id)
+
+    rows = []
+    no = 1
+    count_belum_diproses = 0
+    count_sudah_diproses = 0
+
+    for t in qs:
+        if not t.sudah_pensiun:
+            continue
+
+        riwayat_berhenti = getattr(t, 'riwayat_berhenti', None)
+        sudah_diproses = riwayat_berhenti is not None
+
+        if sudah_diproses:
+            count_sudah_diproses += 1
+        else:
+            count_belum_diproses += 1
+
+        selisih_bulan = (today.year - t.tmt_pensiun.year) * 12 + (today.month - t.tmt_pensiun.month)
+        if today.day < t.tmt_pensiun.day:
+            selisih_bulan -= 1
+        lewat_tahun, lewat_bulan = divmod(max(selisih_bulan, 0), 12)
+
+        rows.append({
+            'no': no,
+            'tendik': t,
+            'tmt_pensiun': t.tmt_pensiun,
+            'lewat_tahun': lewat_tahun,
+            'lewat_bulan': lewat_bulan,
+            'jabatan_fungsional': t.jabatan_fungsional_terakhir,
+            'riwayat_berhenti': riwayat_berhenti,
+            'sudah_diproses': sudah_diproses,
+        })
+        no += 1
+
+    rows.sort(key=lambda r: (r['sudah_diproses'], -(r['lewat_tahun'] * 12 + r['lewat_bulan'])))
+    for i, r in enumerate(rows, start=1):
+        r['no'] = i
+
+    per_page = int(request.GET.get('per_page', 25))
+    if per_page > 9000:
+        per_page = len(rows) or 1
+    paginator = Paginator(rows, per_page or 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'page_obj': page_obj,
+        'total_berhenti': len(rows),
+        'count_belum_diproses': count_belum_diproses,
+        'count_sudah_diproses': count_sudah_diproses,
+        'unit_list': UnitKerja.objects.all().order_by('nama'),
+        'search': search,
+        'unit_id': unit_id,
+        'is_admin': is_admin(request.user),
+    }
+    return render(request, 'tendik/tendik_berhenti_list.html', context)
+
+
+# ─── PROSES BERHENTI/PENSIUN ───────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(is_admin)
+def tendik_berhenti_add(request, tendik_pk):
+    tendik = get_object_or_404(Tendik, pk=tendik_pk)
+    if hasattr(tendik, 'riwayat_berhenti'):
+        messages.warning(request, 'Tendik ini sudah tercatat berhenti sebelumnya.')
+        return redirect('tendik_detail', pk=tendik_pk)
+
+    if request.method == 'POST':
+        form = RiwayatBerhentiTendikForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.tendik = tendik
+            obj.save()
+            messages.success(request, 'Data pemberhentian/pensiun berhasil disimpan.')
+            return redirect('tendik_detail', pk=tendik_pk)
+    else:
+        form = RiwayatBerhentiTendikForm(initial={
+            'alasan': 'PENSIUN',
+            'tanggal': tendik.tmt_pensiun,
+        })
+    return render(request, 'tendik/riwayat_form_tendik.html', {
+        'form': form, 'tendik': tendik, 'title': 'Proses Pemberhentian/Pensiun'
+    })
+
+
+# ─── RIWAYAT STATUS TENDIK ─────────────────────────────────────────────────────
+
+@login_required
+def status_tendik_add(request, tendik_id):
+    tendik = get_object_or_404(Tendik, pk=tendik_id)
+    if request.method == "POST":
+        form = RiwayatStatusTendikForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.tendik = tendik
+            obj.save()
+            messages.success(request, "Riwayat status berhasil ditambahkan.")
+            return redirect('tendik_detail', pk=tendik.pk)
+    else:
+        form = RiwayatStatusTendikForm()
+    return render(request, 'tendik/riwayat_form_tendik.html', {
+        'form': form, 'tendik': tendik, 'title': 'Tambah Riwayat Status'
+    })
+
+
+@login_required
+def status_tendik_edit(request, pk):
+    obj = get_object_or_404(RiwayatStatusTendik, pk=pk)
+    if request.method == "POST":
+        form = RiwayatStatusTendikForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Riwayat status berhasil diperbarui.")
+            return redirect('tendik_detail', pk=obj.tendik_id)
+    else:
+        form = RiwayatStatusTendikForm(instance=obj)
+    return render(request, 'tendik/riwayat_form_tendik.html', {
+        'form': form, 'tendik': obj.tendik, 'title': 'Edit Riwayat Status'
+    })
+
+
+@login_required
+def status_tendik_delete(request, pk):
+    obj = get_object_or_404(RiwayatStatusTendik, pk=pk)
+    tendik_pk = obj.tendik_id
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, "Riwayat status berhasil dihapus.")
+        return redirect('tendik_detail', pk=tendik_pk)
+    return render(request, 'tendik/confirm_delete_tendik.html', {
+        'obj': obj, 'title': 'Hapus Riwayat Status'
+    })
+
+
+# ─── KELUARGA TENDIK ────────────────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(is_admin)
+def keluarga_tendik_add(request, tendik_id):
+    tendik = get_object_or_404(Tendik, pk=tendik_id)
+    if request.method == "POST":
+        form = KeluargaTendikForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.tendik = tendik
+            obj.save()
+            messages.success(request, "Data keluarga berhasil ditambahkan.")
+            return redirect('tendik_detail', pk=tendik.pk)
+    else:
+        form = KeluargaTendikForm()
+    return render(request, 'tendik/riwayat_form_tendik.html', {
+        'form': form, 'tendik': tendik, 'title': 'Tambah Data Keluarga'
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def keluarga_tendik_edit(request, pk):
+    obj = get_object_or_404(KeluargaTendik, pk=pk)
+    if request.method == "POST":
+        form = KeluargaTendikForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Data keluarga berhasil diperbarui.")
+            return redirect('tendik_detail', pk=obj.tendik_id)
+    else:
+        form = KeluargaTendikForm(instance=obj)
+    return render(request, 'tendik/riwayat_form_tendik.html', {
+        'form': form, 'tendik': obj.tendik, 'title': 'Edit Data Keluarga'
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def keluarga_tendik_delete(request, pk):
+    obj = get_object_or_404(KeluargaTendik, pk=pk)
+    tendik_pk = obj.tendik_id
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, "Data keluarga berhasil dihapus.")
+        return redirect('tendik_detail', pk=tendik_pk)
+    return render(request, 'tendik/confirm_delete_tendik.html', {
+        'obj': obj, 'title': 'Hapus Data Keluarga'
+    })
 
 
 # ─── EXPORT EXCEL ─────────────────────────────────────────────────────────────
@@ -165,7 +469,6 @@ def export_excel(request):
     ws.row_dimensions[1].height = 28
 
     # ── Layout kolom ────────────────────────────────────────────────────────
-    # Kolom tunggal (merge row 2-3)
     single_cols = {
         1:  ("NO",               6),
         2:  ("NIP",             20),
@@ -192,16 +495,12 @@ def export_excel(request):
         33: ("USIA",             7),
         34: ("PENSIUN",          9),
     }
-    # Kolom grup (row 2 = label, row 3 = Thn | Bln)
     grouped_cols = {
         13: "MK GOL",
         15: "MK JAB",
         17: "MK KESELURUHAN",
         19: "MK PENSIUN (SISA)",
-        # [FIX] Hapus MK CPNS karena sudah jadi @property, bukan field DB
-        # Geser agar tetap 34 kolom total
     }
-    # [FIX] Kolom 21-22 dipakai untuk TMT PENSIUN + SISA MK (string)
     single_cols[21] = ("TMT PENSIUN", 14)
     single_cols[22] = ("SISA MK",     14)
 
@@ -232,7 +531,7 @@ def export_excel(request):
             "riwayat_jabatan_fungsional",
             "jabatan_struktural",
         )
-        .order_by("nama_terang")  # [FIX] order by nama_terang bukan nama_lengkap
+        .order_by("nama_terang")
     )
 
     def fmt_date(d):
@@ -251,41 +550,32 @@ def export_excel(request):
         jf  = t.jabatan_fungsional_terakhir
         js  = t.jabatan_struktural_aktif
 
-        # [FIX] masa_kerja dari @property, bukan model MasaKerjaTendik
-        mk_g = t.masa_kerja_golongan       # (thn, bln)
-        mk_j = t.masa_kerja_jabatan        # (thn, bln)
-        mk_k = t.masa_kerja_keseluruhan    # (thn, bln)
-        mk_p = t.masa_kerja_pensiun        # (thn, bln) sisa
+        mk_g = t.masa_kerja_golongan
+        mk_j = t.masa_kerja_jabatan
+        mk_k = t.masa_kerja_keseluruhan
+        mk_p = t.masa_kerja_pensiun
 
-        # [FIX] jabatan fungsional: tampilkan nama_dan_jenjang, bukan jenjang saja
         jabf_str = jf.nama_dan_jenjang if jf else "-"
 
         row_data = [
-            # 1-12
             row_num,
             vd(t.nip),
-            t.nama_lengkap,              # @property — aman untuk nilai cell
-            t.nama_unit,                 # @property
+            t.nama_lengkap,
+            t.nama_unit,
             t.get_status_display(),
             t.jenis_kelamin,
             kp.pangkat   if kp else "-",
             kp.golongan  if kp else "-",
             fmt_date(kp.tmt) if kp else "-",
-            jabf_str,                    # [FIX] nama + jenjang
+            jabf_str,
             js.jabatan   if js else "-",
             vd(js.eselon) if js else "-",
-            # 13-14 MK GOL
             mk_g[0], mk_g[1],
-            # 15-16 MK JAB
             mk_j[0], mk_j[1],
-            # 17-18 MK KESELURUHAN
             mk_k[0], mk_k[1],
-            # 19-20 MK PENSIUN (sisa)
             mk_p[0], mk_p[1],
-            # 21 TMT PENSIUN, 22 SISA MK STR
-            fmt_date(t.tmt_pensiun),     # @property
-            t.sisa_masa_kerja_str,       # @property
-            # 23-34
+            fmt_date(t.tmt_pensiun),
+            t.sisa_masa_kerja_str,
             vd(t.bagian),
             vd(t.karpeg),
             fmt_date(t.tmt_cpns),
@@ -296,8 +586,8 @@ def export_excel(request):
             vd(t.tingkat_ijazah_borang),
             vd(t.tempat_lahir),
             fmt_date(t.tanggal_lahir),
-            t.usia_saat_ini or "-",      # @property
-            t.tahun_pensiun or "-",      # @property
+            t.usia_saat_ini or "-",
+            t.tahun_pensiun or "-",
         ]
 
         for col_idx, value in enumerate(row_data, start=1):
@@ -310,7 +600,6 @@ def export_excel(request):
 
         ws.row_dimensions[row_idx].height = 18
 
-    # ── Response ─────────────────────────────────────────────────────────────
     buffer = io.BytesIO()
     wb.save(buffer)
     buffer.seek(0)
@@ -333,14 +622,14 @@ def tendik_detail(request, pk):
             'jabatan_struktural',
             'riwayat_pendidikan',
             'tugas_tambahan',
-            # [FIX] tidak ada masa_kerja prefetch — sudah jadi @property
+            'riwayat_status',
+            'keluarga',
         ),
         pk=pk
     )
     return render(request, 'tendik/tendik_detail.html', {
         'tendik': tendik,
         'is_admin': is_admin(request.user),
-        # Kirim tuple masa kerja ke template agar mudah diakses
         'mk_keseluruhan': tendik.masa_kerja_keseluruhan,
         'mk_golongan':    tendik.masa_kerja_golongan,
         'mk_jabatan':     tendik.masa_kerja_jabatan,
@@ -683,4 +972,3 @@ def unit_kerja_edit(request, pk):
     return render(request, 'tendik/riwayat_form_tendik.html', {
         'form': form, 'title': f'Edit Unit Kerja: {unit.nama}'
     })
-    

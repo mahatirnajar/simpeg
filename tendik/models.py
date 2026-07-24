@@ -1,4 +1,3 @@
-
 from datetime import date
 from typing import Optional, Tuple
 from dateutil.relativedelta import relativedelta
@@ -129,7 +128,8 @@ class Tendik(models.Model):
     tingkat_ijazah_borang  = models.CharField(max_length=10, blank=True, verbose_name="Tingkat Ijazah Borang")
 
 
-    usia_pensiun = models.IntegerField(null=True, blank=True, default=60, verbose_name="Usia Pensiun")
+    usia_pensiun = models.IntegerField(null=True, blank=True, default=58, verbose_name="Usia Pensiun")
+    tmt_pensiun  = models.DateField(null=True, blank=True, verbose_name="TMT Pensiun")
 
     # ── KGB ───────────────────────────────────────────────────────────────────
     tmt_kgb = models.DateField(null=True, blank=True, verbose_name="TMT Kenaikan Gaji Berkala")
@@ -190,12 +190,12 @@ class Tendik(models.Model):
         )
 
     # ── Pensiun ───────────────────────────────────────────────────────────────
-    @property
-    def tmt_pensiun(self):
+    def hitung_tmt_pensiun(self):
         """
         Rumus Excel: tanggal 1 bulan berikutnya setelah HUT ke-usia_pensiun.
-        Contoh: lahir 02-04-1974, pensiun 60 → 01-05-2034
-                lahir 15-12-1968, pensiun 60 → 01-01-2029
+        Contoh: lahir 02-04-1974, pensiun 58 → 01-05-2032
+                lahir 15-12-1968, pensiun 58 → 01-01-2027
+        Tidak menyimpan ke DB — hanya menghitung nilai yang seharusnya.
         """
         if not self.tanggal_lahir or not self.usia_pensiun:
             return None
@@ -209,6 +209,18 @@ class Tendik(models.Model):
     @property
     def tahun_pensiun(self):
         return self.tmt_pensiun.year if self.tmt_pensiun else None
+
+    @property
+    def sudah_pensiun(self):
+        return bool(self.tmt_pensiun and self.tmt_pensiun <= date.today())
+
+    def save(self, *args, **kwargs):
+        # Auto-hitung tmt_pensiun HANYA jika masih kosong (tendik baru / belum diisi manual).
+        # Jika admin sudah mengubahnya manual, nilai itu tidak akan ditimpa lagi.
+        if not self.tmt_pensiun:
+            self.tmt_pensiun = self.hitung_tmt_pensiun()
+        super().save(*args, **kwargs)
+
     # TMT CPNS
     @property
     def tmt_cpns(self):
@@ -293,6 +305,10 @@ class Tendik(models.Model):
     @property
     def tugas_tambahan_aktif(self):
         return self.tugas_tambahan.filter(is_aktif=True).first()
+
+    @property
+    def status_terakhir(self):
+        return self.riwayat_status.order_by('-tanggal_mulai').first()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -507,6 +523,47 @@ class CutiTendik(models.Model):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# RIWAYAT STATUS (AKTIF / CUTI / TUGAS BELAJAR / DLL)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class RiwayatStatusTendik(models.Model):
+    """
+    Status kepegawaian yang sifatnya sementara/berulang (bukan status berhenti permanen —
+    untuk itu pakai RiwayatBerhentiTendik). jenis_cuti mengambil pilihan yang sama
+    persis dengan CutiTendik.JENIS_CHOICES agar tidak ada dua sumber data jenis cuti.
+    """
+    STATUS_CHOICES = [
+        ('AKTIF',         'Aktif'),
+        ('CUTI',          'Cuti'),
+        ('TUGAS_BELAJAR', 'Tugas Belajar'),
+        ('IZIN_BELAJAR',  'Izin Belajar'),
+        ('CLTN',          'CLTN'),
+    ]
+
+    tendik = models.ForeignKey(Tendik, on_delete=models.CASCADE, related_name='riwayat_status')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES)
+    jenis_cuti = models.CharField(
+        max_length=30,
+        choices=CutiTendik.JENIS_CHOICES,   # [reuse] ambil dari master jenis cuti yang sudah ada
+        null=True, blank=True,
+        verbose_name="Jenis Cuti"
+    )
+    tanggal_mulai = models.DateField()
+    tanggal_akhir = models.DateField(null=True, blank=True)
+    no_sk         = models.CharField(max_length=100, blank=True)
+    keterangan    = models.TextField(blank=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-tanggal_mulai']
+        verbose_name = "Riwayat Status Tendik"
+        verbose_name_plural = "Riwayat Status Tendik"
+
+    def __str__(self):
+        return f"{self.tendik.nama_lengkap} – {self.get_status_display()}"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # BERHENTI / MENINGGAL
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -532,3 +589,30 @@ class RiwayatBerhentiTendik(models.Model):
 
     def __str__(self):
         return f"{self.tendik.nama_lengkap} – {self.get_alasan_display()} ({self.tanggal})"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# KELUARGA
+# ─────────────────────────────────────────────────────────────────────────────
+
+class KeluargaTendik(models.Model):
+    STATUS_HUBUNGAN_CHOICES = [
+        ('SUAMI', 'Suami'),
+        ('ISTRI', 'Istri'),
+        ('ANAK',  'Anak'),
+    ]
+
+    tendik = models.ForeignKey(Tendik, on_delete=models.CASCADE, related_name='keluarga')
+    nama = models.CharField(max_length=200)
+    status_hubungan = models.CharField(max_length=20, choices=STATUS_HUBUNGAN_CHOICES)
+    tanggal_lahir = models.DateField(null=True, blank=True)
+    pekerjaan = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['status_hubungan', 'tanggal_lahir']
+        verbose_name = "Keluarga Tendik"
+        verbose_name_plural = "Keluarga Tendik"
+
+    def __str__(self):
+        return f"{self.nama} ({self.get_status_hubungan_display()})"

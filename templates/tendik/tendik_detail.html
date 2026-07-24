@@ -38,7 +38,6 @@
           <div>
             <h5 class="mb-0 fw-bold">{{ tendik.nama_lengkap }}</h5>
             <div class="text-muted" style="font-size:0.8rem">
-              {# [FIX] Tidak ada lagi .fakultas — hanya unit_kerja #}
               {{ tendik.unit_kerja.nama|default:"Unit belum ditentukan" }}
             </div>
             <span class="badge mt-1
@@ -48,12 +47,14 @@
               {% else %}bg-secondary{% endif %}">
               {{ tendik.status }}
             </span>
+            {% if tendik.status_terakhir %}
+            <span class="badge bg-info mt-1">{{ tendik.status_terakhir.get_status_display }}</span>
+            {% endif %}
           </div>
         </div>
 
         <table class="table table-sm table-borderless mb-0">
           <tr><th style="width:38%;font-size:0.78rem;color:#6b7280">NIP</th><td>{{ tendik.nip|default:"-" }}</td></tr>
-          {# [FIX] Hapus NIDN, KARPEG, NIRA — tidak ada di models baru #}
           <tr><th style="font-size:0.78rem;color:#6b7280">NUPTK</th><td>{{ tendik.nuptk|default:"-" }}</td></tr>
           <tr><th style="font-size:0.78rem;color:#6b7280">No. KTP</th><td>{{ tendik.no_ktp|default:"-" }}</td></tr>
           <tr><th style="font-size:0.78rem;color:#6b7280">Jenis Kelamin</th><td>{{ tendik.get_jenis_kelamin_display }}</td></tr>
@@ -82,13 +83,11 @@
               </span>
             </td>
           </tr>
-          {# [FIX] tmt_cpns sekarang @property dari NIP — tampilkan saja #}
           <tr><th style="font-size:0.78rem;color:#6b7280">TMT CPNS</th><td>{{ tendik.tmt_cpns|date:"d/m/Y"|default:"-" }}</td></tr>
           <tr><th style="font-size:0.78rem;color:#6b7280">TMT PNS</th><td>{{ tendik.tmt_pns|date:"d/m/Y"|default:"-" }}</td></tr>
           <tr><th style="font-size:0.78rem;color:#6b7280">TMT KGB</th><td>{{ tendik.tmt_kgb|date:"d/m/Y"|default:"-" }}</td></tr>
         </table>
 
-        {# Kontak — model baru punya no_hp, email, alamat #}
         {% if tendik.no_hp or tendik.email or tendik.alamat %}
         <hr class="my-2">
         <div style="font-size:0.78rem;color:#6b7280;font-weight:600" class="mb-1">Kontak</div>
@@ -139,7 +138,6 @@
           <div class="card-body">
             {% if jf %}
             <div class="row g-2">
-              {# [FIX] model baru punya nama_jabatan terpisah dari jenjang #}
               <div class="col-5"><div style="font-size:0.72rem;color:#6b7280">Jabatan</div><div class="fw-semibold jabatan-l">{{ jf.nama_jabatan|default:"-" }}</div></div>
               <div class="col-4"><div style="font-size:0.72rem;color:#6b7280">Jenjang</div><div>{{ jf.jenjang|default:"-" }}</div></div>
               <div class="col-3"><div style="font-size:0.72rem;color:#6b7280">TMT</div><div>{{ jf.tmt|date:"d/m/Y" }}</div></div>
@@ -177,7 +175,6 @@
           <div class="card-header"><i class="bi bi-building"></i> Unit Kerja & Kompetensi</div>
           <div class="card-body">
             <table class="table table-sm table-borderless mb-0">
-              {# [FIX] Hapus baris Fakultas — tidak ada di models baru #}
               <tr><th style="width:38%;font-size:0.78rem;color:#6b7280">Unit Kerja</th><td>{{ tendik.unit_kerja.nama|default:"-" }}</td></tr>
               <tr><th style="font-size:0.78rem;color:#6b7280">Bagian</th><td>{{ tendik.bagian|default:"-" }}</td></tr>
               <tr><th style="font-size:0.78rem;color:#6b7280">Bidang Keahlian</th><td>{{ tendik.bidang_keahlian|default:"-" }}</td></tr>
@@ -205,6 +202,8 @@
       <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-pend">Pendidikan</a></li>
       <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-tt">Tugas Tambahan</a></li>
       <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-mk">Masa Kerja</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-status">Riwayat Status</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-keluarga">Keluarga</a></li>
     </ul>
   </div>
   <div class="card-body tab-content">
@@ -242,7 +241,6 @@
     <div class="tab-pane fade" id="tab-jf">
       {% if is_admin %}<a href="{% url 'jabatan_tendik_add' tendik.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
       <table class="table table-sm table-hover">
-        {# [FIX] Kolom sekarang: Nama Jabatan | Jenjang | Jenis | TMT | AK | Keterangan #}
         <thead><tr><th>Nama Jabatan</th><th>Jenjang</th><th>Jenis</th><th>TMT</th><th>Angka Kredit</th><th>Keterangan</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
         <tbody>
           {% for jf in tendik.riwayat_jabatan_fungsional.all %}
@@ -295,7 +293,6 @@
     <div class="tab-pane fade" id="tab-pend">
       {% if is_admin %}<a href="{% url 'pendidikan_tendik_add' tendik.pk %}" class="btn btn-sm btn-success mb-2"><i class="bi bi-plus"></i> Tambah</a>{% endif %}
       <table class="table table-sm table-hover">
-        {# [FIX] Tambah kolom Fakultas PT dan Prodi PDDikti (field baru di models) #}
         <thead><tr><th>Jenjang</th><th>Program Studi</th><th>Fakultas PT</th><th>Universitas</th><th>Tahun Lulus</th>{% if is_admin %}<th>Aksi</th>{% endif %}</tr></thead>
         <tbody>
           {% for pend in tendik.riwayat_pendidikan.all %}
@@ -341,7 +338,6 @@
 
     {# ── Tab Masa Kerja ──────────────────────────────────────────────────── #}
     <div class="tab-pane fade" id="tab-mk">
-      {# [FIX] Masa kerja sekarang semua @property — tidak ada tombol Edit, tidak ada model terpisah #}
       {% with mk_gol=tendik.masa_kerja_golongan mk_jab=tendik.masa_kerja_jabatan mk_all=tendik.masa_kerja_keseluruhan mk_pen=tendik.masa_kerja_pensiun %}
       <table class="table table-sm" style="max-width:520px">
         <thead>
@@ -353,7 +349,6 @@
           </tr>
         </thead>
         <tbody>
-          {# MK CPNS — hanya PNS, diambil dari field mk_cpns_tahun/bulan #}
           {% if tendik.status == 'PNS' or tendik.status == 'CPNS' %}
           <tr>
             <th style="font-size:0.8rem">MK CPNS Diakui</th>
@@ -404,6 +399,86 @@
         MK Keseluruhan memperhitungkan masa kerja CPNS yang diakui (MK CPNS Diakui).
       </div>
       {% endwith %}
+    </div>
+
+    {# ── Tab Riwayat Status ──────────────────────────────────────────────── #}
+    <div class="tab-pane fade" id="tab-status">
+      {% if is_admin %}
+      <a href="{% url 'status_tendik_add' tendik.pk %}" class="btn btn-sm btn-success mb-2">
+        <i class="bi bi-plus"></i> Tambah
+      </a>
+      {% endif %}
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Jenis Cuti</th>
+            <th>Tanggal Mulai</th>
+            <th>Tanggal Akhir</th>
+            <th>No SK</th>
+            <th>Keterangan</th>
+            {% if is_admin %}<th width="120">Aksi</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in tendik.riwayat_status.all %}
+          <tr>
+            <td><span class="badge bg-primary">{{ item.get_status_display }}</span></td>
+            <td>{% if item.jenis_cuti %}{{ item.get_jenis_cuti_display }}{% else %}-{% endif %}</td>
+            <td>{{ item.tanggal_mulai|date:"d/m/Y" }}</td>
+            <td>{% if item.tanggal_akhir %}{{ item.tanggal_akhir|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+            <td>{{ item.no_sk|default:"-" }}</td>
+            <td>{{ item.keterangan|default:"-" }}</td>
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'status_tendik_edit' item.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'status_tendik_delete' item.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted">Belum ada data riwayat status.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# ── Tab Keluarga ────────────────────────────────────────────────────── #}
+    <div class="tab-pane fade" id="tab-keluarga">
+      {% if is_admin %}
+      <a href="{% url 'keluarga_tendik_add' tendik.pk %}" class="btn btn-sm btn-success mb-2">
+        <i class="bi bi-plus"></i> Tambah
+      </a>
+      {% endif %}
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Status Hubungan</th>
+            <th>Tanggal Lahir</th>
+            <th>Pekerjaan</th>
+            {% if is_admin %}<th width="120">Aksi</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in tendik.keluarga.all %}
+          <tr>
+            <td>{{ item.nama }}</td>
+            <td><span class="badge bg-secondary">{{ item.get_status_hubungan_display }}</span></td>
+            <td>{{ item.tanggal_lahir|date:"d/m/Y"|default:"-" }}</td>
+            <td>{{ item.pekerjaan|default:"-" }}</td>
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'keluarga_tendik_edit' item.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'keluarga_tendik_delete' item.pk %}" class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted">Belum ada data keluarga.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
   </div>

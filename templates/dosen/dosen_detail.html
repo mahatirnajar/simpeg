@@ -52,6 +52,14 @@
           <tr><th style="font-size:0.78rem;color:#6b7280">Tanggal Lahir</th><td>{{ dosen.tanggal_lahir|date:"d-m-Y"|default:"-" }}</td></tr>
           <tr><th style="font-size:0.78rem;color:#6b7280">Usia Saat Ini</th><td>{{ dosen.usia_saat_ini|default:"-" }} tahun</td></tr>
           <tr><th style="font-size:0.78rem;color:#6b7280">Tahun Pensiun</th><td><strong>{{ dosen.tahun_pensiun|default:"-" }}</strong></td></tr>
+            <th style="font-size:0.78rem;color:#6b7280">TMT Pensiun (BUP)</th>
+            <td>
+              <strong>{{ dosen.tmt_pensiun|date:"d-m-Y"|default:"-" }}</strong>
+              {% if dosen.sudah_bup %}
+              <span class="badge bg-danger ms-1">Sudah BUP</span>
+              {% endif %}
+            </td>
+          </tr>
           <tr><th style="font-size:0.78rem;color:#6b7280">TMT CPNS</th><td>{{ dosen.tmt_cpns|date:"d/m/Y"|default:"-" }}</td></tr>
           <tr><th style="font-size:0.78rem;color:#6b7280">TMT PNS</th><td>{{ dosen.tmt_pns|date:"d/m/Y"|default:"-" }}</td></tr>
           {% if dosen.status_terakhir %}
