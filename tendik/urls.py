@@ -40,7 +40,18 @@ urlpatterns = [
     path('unit-kerja/',                views.unit_kerja_list,   name='unit_kerja_list'),
     path('unit-kerja/baru/',           views.unit_kerja_create, name='unit_kerja_create'),
     path('unit-kerja/<int:pk>/edit/',  views.unit_kerja_edit,   name='unit_kerja_edit'),
+
+    # Status Tendik
+    path('tendik/<int:tendik_id>/status/add/',views.status_tendik_add,name='status_tendik_add'),
+    path('status/<int:pk>/edit/',views.status_tendik_edit,name='status_tendik_edit'),
+    path('status/<int:pk>/delete/',views.status_tendik_delete,name='status_tendik_delete'),
+
+    # Keluarga
+    path('tendik/<int:tendik_id>/keluarga/tambah/', views.keluarga_add, name='keluarga_add'),
+    path('keluarga/<int:pk>/edit/', views.keluarga_edit, name='keluarga_edit'),
+    path('keluarga/<int:pk>/hapus/', views.keluarga_delete, name='keluarga_delete'),
     
+
     # Riwayat Hidup
     path('<int:pk>/riwayat-hidup/', riwayat_hidup_tendik, name='tendik_riwayat_hidup'),
 ]

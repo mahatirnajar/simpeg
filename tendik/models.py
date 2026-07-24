@@ -540,3 +540,85 @@ class RiwayatBerhentiTendik(models.Model):
 
     def __str__(self):
         return f"{self.tendik.nama_lengkap} – {self.get_alasan_display()} ({self.tanggal})"
+
+
+class RiwayatStatusTendik(models.Model):
+    STATUS_CHOICES = [
+        ('AKTIF', 'Aktif'),
+        ('CUTI', 'Cuti'),
+        ('TUGAS_BELAJAR', 'Tugas Belajar'),
+        ('IZIN_BELAJAR', 'Izin Belajar'),
+        ('CLTN', 'CLTN'),
+        ('PENSIUN', 'Pensiun'),
+        ('MENINGGAL', 'Meninggal'),
+        ('PINDAH', 'Pindah Instansi'),
+        ('BERHENTI', 'Berhenti'),
+    ]
+
+    JENIS_CUTI_CHOICES = [
+        ('TAHUNAN', 'Cuti Tahunan'),
+        ('BESAR', 'Cuti Besar'),
+        ('SAKIT', 'Cuti Sakit'),
+        ('MELAHIRKAN', 'Cuti Melahirkan'),
+        ('ALASAN_PENTING', 'Cuti Karena Alasan Penting'),
+        ('DILUAR_TANGGUNGAN_NEGARA', 'Cuti di Luar Tanggungan Negara'),
+    ]
+
+    tendik = models.ForeignKey(
+        Tendik,
+        on_delete=models.CASCADE,
+        related_name='riwayat_status'
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES
+    )
+    jenis_cuti = models.CharField(max_length=50, 
+                                  choices=JENIS_CUTI_CHOICES, 
+                                  null=True, 
+                                  blank=True)
+
+    tanggal_mulai = models.DateField()
+    tanggal_akhir = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    no_sk = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
+
+
+    keterangan = models.TextField(
+        blank=True
+    )
+
+class KeluargaTendik(models.Model):
+    STATUS_HUBUNGAN_CHOICES = [
+        ('SUAMI', 'Suami'),
+        ('ISTRI', 'Istri'),
+        ('ANAK', 'Anak'),
+    ]
+
+    tendik = models.ForeignKey(
+        Tendik, 
+        on_delete=models.CASCADE, 
+        related_name='keluarga'
+    )
+    nama = models.CharField(max_length=200)
+    status_hubungan = models.CharField(max_length=20, choices=STATUS_HUBUNGAN_CHOICES)
+    tanggal_lahir = models.DateField(null=True, blank=True)
+    pekerjaan = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
+
+
+    class Meta:
+        ordering = ['status_hubungan', 'tanggal_lahir']
+
+    def __str__(self):
+        return f"{self.nama} ({self.get_status_hubungan_display()})"

@@ -205,6 +205,8 @@
       <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-pend">Pendidikan</a></li>
       <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-tt">Tugas Tambahan</a></li>
       <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-mk">Masa Kerja</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-status">Riwayat Status</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-keluarga">Keluarga</a></li>
     </ul>
   </div>
   <div class="card-body tab-content">
@@ -405,6 +407,139 @@
       </div>
       {% endwith %}
     </div>
+
+        <!-- Riwayat Status Tendik -->
+     <div class="tab-pane fade" id="tab-status">
+
+      {% if is_admin %}
+      <a href="{% url 'status_tendik_add' tendik.pk %}"
+        class="btn btn-sm btn-success mb-2">
+          <i class="bi bi-plus"></i> Tambah
+      </a>
+      {% endif %}
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Tanggal Mulai</th>
+            <th>Tanggal Akhir</th>
+            <th>No SK</th>
+            <th>Keterangan</th>
+
+            {% if is_admin %}
+            <th width="120">Aksi</th>
+            {% endif %}
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for item in tendik.riwayat_status.all %}
+          <tr>
+
+            <td>
+              <span class="badge bg-primary">
+                {{ item.get_status_display }}
+              </span>
+            </td>
+
+            <td>{{ item.tanggal_mulai|date:"d/m/Y" }}</td>
+
+            <td>
+              {% if item.tanggal_akhir %}
+                {{ item.tanggal_akhir|date:"d/m/Y" }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+
+            <td>{{ item.no_sk|default:"-" }}</td>
+
+            <td>{{ item.keterangan|default:"-" }}</td>
+
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'status_tendik_edit' item.pk %}"
+                class="btn btn-xs btn-outline-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+
+              <a href="{% url 'status_tendik_delete' item.pk %}"
+                class="btn btn-xs btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </a>
+            </td>
+            {% endif %}
+
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted">
+              Belum ada data riwayat status.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    
+    </div>
+
+
+    <!-- Tab Keluarga -->
+    <div class="tab-pane fade" id="tab-keluarga">
+      {% if is_admin %}
+      <a href="{% url 'keluarga_add' tendik.pk %}"
+        class="btn btn-sm btn-success mb-2">
+          <i class="bi bi-plus"></i> Tambah
+      </a>
+      {% endif %}
+      
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Status Hubungan</th>
+            <th>Tanggal Lahir</th>
+            <th>Pekerjaan</th>
+            {% if is_admin %}
+            <th width="120">Aksi</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in tendik.keluarga.all %}
+          <tr>
+            <td>{{ item.nama }}</td>
+            <td>
+              <span class="badge bg-secondary">
+                {{ item.get_status_hubungan_display }}
+              </span>
+            </td>
+            <td>{{ item.tanggal_lahir|date:"d/m/Y"|default:"-" }}</td>
+            <td>{{ item.pekerjaan|default:"-" }}</td>
+            
+            {% if is_admin %}
+            <td>
+              <a href="{% url 'keluarga_edit' item.pk %}" class="btn btn-xs btn-outline-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'keluarga_delete' item.pk %}" class="btn btn-xs btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted">
+              Belum ada data keluarga.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+
 
   </div>
 </div>

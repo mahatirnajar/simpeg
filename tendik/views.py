@@ -13,13 +13,13 @@ from .models import (
     Tendik, UnitKerja,
     RiwayatKepangkatanTendik, RiwayatJabatanFungsionalTendik,
     JabatanStrukturalTendik, RiwayatPendidikanTendik,
-    TugasTambahanTendik,
+    TugasTambahanTendik, RiwayatStatusTendik, KeluargaTendik
 )
 from .forms import (
     TendikForm, UnitKerjaForm,
     RiwayatKepangkatanTendikForm, RiwayatJabatanFungsionalTendikForm,
     JabatanStrukturalTendikForm, RiwayatPendidikanTendikForm,
-    TugasTambahanTendikForm,
+    TugasTambahanTendikForm, RiwayatStatusTendikForm, KeluargaTendikForm
 )
 
 
@@ -683,4 +683,127 @@ def unit_kerja_edit(request, pk):
     return render(request, 'tendik/riwayat_form_tendik.html', {
         'form': form, 'title': f'Edit Unit Kerja: {unit.nama}'
     })
-    
+
+
+# ================Status Tendik ====================================
+@login_required
+def status_tendik_add(request, tendik_id):
+    tendik = get_object_or_404(Tendik, pk=tendik_id)
+
+    if request.method == "POST":
+        form = RiwayatStatusTendikForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.tendik = tendik
+            obj.save()
+
+            messages.success(request, "Riwayat status berhasil ditambahkan.")
+            return redirect('tendik_detail', pk=tendik.pk)
+    else:
+        form = RiwayatStatusTendikForm()
+
+    return render(request, 'tendik/riwayat_form_tendik.html', {
+        'form': form,
+        'tendik': tendik,
+        'judul': 'Tambah Riwayat Status'
+    })
+
+
+@login_required
+def status_tendik_edit(request, pk):
+    obj = get_object_or_404(RiwayatStatusTendik, pk=pk)
+
+    if request.method == "POST":
+        form = RiwayatStatusTendikForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+
+            messages.success(request, "Riwayat status berhasil diperbarui.")
+            return redirect('tendik_detail', pk=obj.tendik.pk)
+    else:
+        form = RiwayatStatusTendikForm(instance=obj)
+
+    return render(request, 'tendik/riwayat_form_tendik.html', {
+        'form': form,
+        'tendik': obj.tendik,
+        'judul': 'Edit Riwayat Status'
+    })
+
+
+@login_required
+def status_tendik_delete(request, pk):
+    obj = get_object_or_404(RiwayatStatusTendik, pk=pk)
+
+    if request.method == 'POST':
+        tendik_pk = obj.tendik.pk
+        obj.delete()
+
+        messages.success(request, "Riwayat status berhasil dihapus.")
+        return redirect('tendik_detail', pk=tendik_pk)
+
+    return render(request, 'tendik/confirm_delete_tendik.html', {
+        'obj': obj,
+        'judul': 'Hapus Riwayat Status'
+    })
+
+
+#=============== Keluarga Tendik ==================================#
+
+@login_required
+@user_passes_test(is_admin)
+def keluarga_add(request, tendik_id):
+    tendik = get_object_or_404(Tendik, pk=tendik_id)
+
+    if request.method == "POST":
+        form = KeluargaTendikForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.tendik = tendik
+            obj.save()
+            messages.success(request, "Data keluarga berhasil ditambahkan.")
+            return redirect('tendik_detail', pk=tendik.pk)
+    else:
+        form = KeluargaTendikForm()
+
+    return render(request, 'tendik/riwayat_form_tendik.html', {
+        'form': form,
+        'tendik': tendik,
+        'title': 'Tambah Data Keluarga'
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def keluarga_edit(request, pk):
+    obj = get_object_or_404(KeluargaTendik, pk=pk)
+
+    if request.method == "POST":
+        form = KeluargaTendikForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Data keluarga berhasil diperbarui.")
+            return redirect('tendik_detail', pk=obj.tendik.pk)
+    else:
+        form = KeluargaTendikForm(instance=obj)
+
+    return render(request, 'tendik/riwayat_form_tendik.html', {
+        'form': form,
+        'tendik': obj.tendik,
+        'title': 'Edit Data Keluarga'
+    })
+
+
+@login_required
+def keluarga_delete(request, pk):
+    obj = get_object_or_404(KeluargaTendik, pk=pk)
+
+    if request.method == 'POST':
+        tendik_pk = obj.tendik.pk
+        obj.delete()
+        messages.success(request, "Data keluarga berhasil dihapus.")
+        return redirect('dosen_detail', pk=tendik_pk)
+
+    return render(request, 'tendik/confirm_delete_tendik.html', {
+        'obj': obj,
+        'title': 'Hapus Data Keluarga'
+    })
