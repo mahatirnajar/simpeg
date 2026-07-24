@@ -6,6 +6,8 @@ urlpatterns = [
     path('', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('dosen/naik-pangkat/', views.naik_pangkat_list, name='naik_pangkat_list'),
+    path('dosen/berhenti/', views.dosen_berhenti_list, name='dosen_berhenti_list'),
     path("dosen/export/excel/", views.export_excel, name="dosen_export_excel"),
     # Dosen CRUD
     path('dosen/baru/', views.dosen_create, name='dosen_create'),

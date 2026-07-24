@@ -48,9 +48,11 @@ def dashboard(request):
     status_filter = request.GET.get('status', '')
     jabatan_filter = request.GET.get('jabatan', '')
 
+    STATUS_TIDAK_AKTIF = ['PENSIUN', 'MENINGGAL', 'BERHENTI', 'PINDAH']
+
     dosen_qs = Dosen.objects.select_related('fakultas').prefetch_related(
         'riwayat_kepangkatan', 'riwayat_jabatan_fungsional',
-        'tugas_tambahan', 'masa_kerja'
+        'tugas_tambahan', 'masa_kerja', 'riwayat_status'
     )
 
     if search:
@@ -69,6 +71,10 @@ def dashboard(request):
     rows = []
     no = 1
     for d in dosen_qs:
+        status_terakhir = d.status_terakhir
+        if status_terakhir and status_terakhir.status in STATUS_TIDAK_AKTIF:
+            continue
+
         kp = d.kepangkatan_terakhir
         jf = d.jabatan_fungsional_terakhir
         tt = d.tugas_tambahan_aktif
@@ -91,13 +97,19 @@ def dashboard(request):
     if per_page > 9000:
         per_page = len(rows)
     paginator = Paginator(rows, per_page or 10)
-    
+
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Stats
-    total = Dosen.objects.count()
-    jabatan_counts = RiwayatJabatanFungsional.objects.aggregate(
+    # Stats — hanya dosen aktif (bukan pensiun/meninggal/berhenti/pindah)
+    dosen_tidak_aktif_ids = RiwayatStatusDosen.objects.filter(
+        status__in=STATUS_TIDAK_AKTIF
+    ).values_list('dosen_id', flat=True)
+
+    total = Dosen.objects.exclude(pk__in=dosen_tidak_aktif_ids).count()
+    jabatan_counts = RiwayatJabatanFungsional.objects.exclude(
+        dosen_id__in=dosen_tidak_aktif_ids
+    ).aggregate(
         gb_count=Count('dosen', filter=Q(jenjang__icontains='Guru Besar'), distinct=True),
         lk_count=Count('dosen', filter=Q(jenjang__icontains='Lektor Kepala'), distinct=True),
         lektor_count=Count('dosen', filter=Q(jenjang__icontains='Lektor') & ~Q(jenjang__icontains='Lektor Kepala'), distinct=True),
@@ -122,6 +134,214 @@ def dashboard(request):
         'is_admin': is_admin(request.user),
     }
     return render(request, 'dosen/dashboard.html', context)
+
+# ─── KENAIKAN PANGKAT ─────────────────────────────────────────────────────────
+
+@login_required
+def naik_pangkat_list(request):
+    search = request.GET.get('q', '')
+    fakultas_id = request.GET.get('fakultas', '')
+
+    today = timezone.localdate()
+    try:
+        batas_tmt = today.replace(year=today.year - 2)
+    except ValueError:
+        # antisipasi 29 Feb
+        batas_tmt = today.replace(month=2, day=28, year=today.year - 2)
+
+    dosen_qs = Dosen.objects.select_related('fakultas').prefetch_related(
+        'riwayat_kepangkatan', 'riwayat_jabatan_fungsional'
+    )
+
+    if search:
+        dosen_qs = dosen_qs.filter(
+            Q(nama_lengkap__icontains=search) |
+            Q(nuptk__icontains=search) |
+            Q(nip__icontains=search) |
+            Q(nama_terang__icontains=search)
+        )
+    if fakultas_id:
+        dosen_qs = dosen_qs.filter(fakultas_id=fakultas_id)
+
+    def lama_menjabat(tmt, hari_ini):
+        years = hari_ini.year - tmt.year
+        months = hari_ini.month - tmt.month
+        if hari_ini.day < tmt.day:
+            months -= 1
+        if months < 0:
+            years -= 1
+            months += 12
+        return years, months
+
+    def lama_menjabat(tmt, hari_ini):
+        years = hari_ini.year - tmt.year
+        months = hari_ini.month - tmt.month
+        if hari_ini.day < tmt.day:
+            months -= 1
+        if months < 0:
+            years -= 1
+            months += 12
+        return years, months
+
+    rows = []
+    no = 1
+    count_2th = 0   # >= 2 tahun (mendesak)
+    count_3th = 0   # >= 3 tahun (sangat mendesak)
+    count_5th = 0   # >= 5 tahun (kritis)
+
+    for d in dosen_qs:
+        kp = d.kepangkatan_terakhir
+        if not kp or not kp.tmt:
+            continue
+        if kp.tmt > batas_tmt:
+            continue
+
+        lama_tahun, lama_bulan = lama_menjabat(kp.tmt, today)
+
+        count_2th += 1
+        if lama_tahun >= 3:
+            count_3th += 1
+        if lama_tahun >= 5:
+            count_5th += 1
+
+        rows.append({
+            'no': no,
+            'dosen': d,
+            'kepangkatan': kp,
+            'jabatan_fungsional': d.jabatan_fungsional_terakhir,
+            'lama_tahun': lama_tahun,
+            'lama_bulan': lama_bulan,
+        })
+        no += 1
+
+    per_page = int(request.GET.get('per_page', 25))
+    if per_page > 9000:
+        per_page = len(rows) or 1
+    paginator = Paginator(rows, per_page or 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'total_eligible': len(rows),
+        'count_2th': count_2th,
+        'count_3th': count_3th,
+        'count_5th': count_5th,
+        'fakultas_list': Fakultas.objects.all(),
+        'search': search,
+        'fakultas_id': fakultas_id,
+        'is_admin': is_admin(request.user),
+    }
+    return render(request, 'dosen/naik_pangkat_list.html', context)
+# EXPORT DOSEN
+
+# ─── DOSEN BERHENTI / PENSIUN (BUP) ────────────────────────────────────────────
+
+def _tambah_tahun(tgl, tahun):
+    """Tambahkan sejumlah tahun ke tanggal, aman untuk 29 Februari."""
+    try:
+        return tgl.replace(year=tgl.year + tahun)
+    except ValueError:
+        return tgl.replace(month=2, day=28, year=tgl.year + tahun)
+
+
+def _hitung_bup(dosen):
+    """Tentukan usia BUP: pakai field usia_pensiun jika diisi manual,
+    jika tidak: Guru Besar = 70 tahun, selain itu = 65 tahun."""
+    if dosen.usia_pensiun:
+        return dosen.usia_pensiun
+    jf = dosen.jabatan_fungsional_terakhir
+    if jf and 'guru besar' in jf.jenjang.lower():
+        return 70
+    return 65
+
+
+@login_required
+def dosen_berhenti_list(request):
+    search = request.GET.get('q', '')
+    fakultas_id = request.GET.get('fakultas', '')
+
+    today = timezone.localdate()
+
+    dosen_qs = Dosen.objects.select_related('fakultas').prefetch_related(
+        'riwayat_jabatan_fungsional', 'riwayat_status'
+    )
+
+    if search:
+        dosen_qs = dosen_qs.filter(
+            Q(nama_lengkap__icontains=search) |
+            Q(nuptk__icontains=search) |
+            Q(nip__icontains=search) |
+            Q(nama_terang__icontains=search)
+        )
+    if fakultas_id:
+        dosen_qs = dosen_qs.filter(fakultas_id=fakultas_id)
+
+    rows = []
+    no = 1
+    count_belum_diproses = 0
+    count_sudah_diproses = 0
+
+    for d in dosen_qs:
+        if not d.tanggal_lahir:
+            continue
+
+        bup = _hitung_bup(d)
+        tanggal_bup = _tambah_tahun(d.tanggal_lahir, bup)
+
+        # Belum mencapai BUP -> lewati (masih aktif, tidak masuk daftar berhenti)
+        if tanggal_bup > today:
+            continue
+
+        status_terakhir = d.status_terakhir
+        sudah_diproses = bool(status_terakhir and status_terakhir.status in ['PENSIUN', 'MENINGGAL', 'BERHENTI', 'PINDAH'])
+
+        if sudah_diproses:
+            count_sudah_diproses += 1
+        else:
+            count_belum_diproses += 1
+
+        selisih_bulan = (today.year - tanggal_bup.year) * 12 + (today.month - tanggal_bup.month)
+        if today.day < tanggal_bup.day:
+            selisih_bulan -= 1
+        lewat_tahun, lewat_bulan = divmod(max(selisih_bulan, 0), 12)
+
+        rows.append({
+            'no': no,
+            'dosen': d,
+            'bup': bup,
+            'tanggal_bup': tanggal_bup,
+            'lewat_tahun': lewat_tahun,
+            'lewat_bulan': lewat_bulan,
+            'jabatan_fungsional': d.jabatan_fungsional_terakhir,
+            'status_terakhir': status_terakhir,
+            'sudah_diproses': sudah_diproses,
+        })
+        no += 1
+
+    # Urutkan: yang belum diproses & paling lama lewat BUP di atas
+    rows.sort(key=lambda r: (r['sudah_diproses'], -(r['lewat_tahun'] * 12 + r['lewat_bulan'])))
+    for i, r in enumerate(rows, start=1):
+        r['no'] = i
+
+    per_page = int(request.GET.get('per_page', 25))
+    if per_page > 9000:
+        per_page = len(rows) or 1
+    paginator = Paginator(rows, per_page or 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'total_berhenti': len(rows),
+        'count_belum_diproses': count_belum_diproses,
+        'count_sudah_diproses': count_sudah_diproses,
+        'fakultas_list': Fakultas.objects.all(),
+        'search': search,
+        'fakultas_id': fakultas_id,
+        'is_admin': is_admin(request.user),
+    }
+    return render(request, 'dosen/dosen_berhenti_list.html', context)
 
 
 # EXPORT DOSEN

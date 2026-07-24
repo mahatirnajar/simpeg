@@ -1,0 +1,150 @@
+{% extends 'dosen/base.html' %}
+{% block title %}Dosen Berhenti - SIMPEG UNTAD{% endblock %}
+{% block page_title %}Dosen Berhenti (Pensiun/BUP){% endblock %}
+
+{% block content %}
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="background:linear-gradient(135deg,#374151,#6b7280)">
+      <div style="font-size:0.75rem;opacity:0.8">Total Mencapai BUP</div>
+      <div style="font-size:2rem;font-weight:700">{{ total_berhenti }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Berdasarkan Tgl. Lahir & Jabatan</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="background:linear-gradient(135deg,#b91c1c,#ef4444)">
+      <div style="font-size:0.75rem;opacity:0.8">Belum Diproses</div>
+      <div style="font-size:2rem;font-weight:700">{{ count_belum_diproses }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Perlu SK Pemberhentian</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="background:linear-gradient(135deg,#1a5c2a,#2d8a47)">
+      <div style="font-size:0.75rem;opacity:0.8">Sudah Diproses</div>
+      <div style="font-size:2rem;font-weight:700">{{ count_sudah_diproses }}</div>
+      <div style="font-size:0.72rem;opacity:0.7">Status Pensiun/Berhenti Tercatat</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-sm-6 col-md-3">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Cari Dosen</label>
+        <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Nama / NUPTK / NIP...">
+      </div>
+      <div class="col-12 col-sm-6 col-md-3">
+        <label class="form-label mb-1" style="font-size:0.75rem;color:#6b7280">Fakultas</label>
+        <select name="fakultas" class="form-select form-select-sm">
+          <option value="">Semua</option>
+          {% for fak in fakultas_list %}
+          <option value="{{ fak.pk }}" {% if fakultas_id == fak.pk|stringformat:"s" %}selected{% endif %}>{{ fak.kode }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-search"></i> Cari</button>
+        <a href="{% url 'dosen_berhenti_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between py-2">
+    <span><i class="bi bi-person-dash-fill me-2"></i>Daftar Dosen Mencapai BUP</span>
+    <small class="text-muted">{{ page_obj.paginator.count }} data</small>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th class="text-center" style="width:35px">NO</th>
+            <th>NAMA DOSEN</th>
+            <th class="d-none d-md-table-cell">UNIT</th>
+            <th class="d-none d-md-table-cell">JAB. FUNGSIONAL</th>
+            <th class="text-center">TGL. LAHIR</th>
+            <th class="text-center">BUP</th>
+            <th class="text-center">TGL. CAPAI BUP</th>
+            <th class="text-center">LEWAT BUP</th>
+            <th class="text-center">STATUS</th>
+            {% if is_admin %}<th class="text-center">AKSI</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in page_obj %}
+          {% with d=row.dosen jf=row.jabatan_fungsional %}
+          <tr class="{% if row.sudah_diproses %}text-muted{% endif %}">
+            <td class="text-center">{{ row.no }}</td>
+            <td>
+              <a href="{% url 'dosen_detail' d.pk %}" class="text-decoration-none fw-semibold">{{ d.nama_lengkap }}</a>
+              <div class="d-md-none"><small class="text-muted">{{ d.fakultas.kode|default:"-" }}</small></div>
+            </td>
+            <td class="d-none d-md-table-cell"><small>{{ d.fakultas.kode|default:"-" }}</small></td>
+            <td class="d-none d-md-table-cell">
+              {% if jf %}<small>{{ jf.jenjang }}</small>{% else %}<small class="text-muted">-</small>{% endif %}
+            </td>
+            <td class="text-center"><small>{{ d.tanggal_lahir|date:"d-m-Y" }}</small></td>
+            <td class="text-center"><span class="badge bg-secondary">{{ row.bup }} th</span></td>
+            <td class="text-center"><small>{{ row.tanggal_bup|date:"d-m-Y" }}</small></td>
+            <td class="text-center">
+              <span class="badge {% if row.sudah_diproses %}bg-light text-dark{% else %}bg-danger{% endif %}">
+                {{ row.lewat_tahun }} th {{ row.lewat_bulan }} bln
+              </span>
+            </td>
+            <td class="text-center">
+              {% if row.sudah_diproses %}
+              <span class="badge bg-success">{{ row.status_terakhir.get_status_display }}</span>
+              {% else %}
+              <span class="badge bg-warning text-dark">Belum Diproses</span>
+              {% endif %}
+            </td>
+            {% if is_admin %}
+            <td class="text-center">
+              {% if not row.sudah_diproses %}
+              <a href="{% url 'status_dosen_add' d.pk %}" class="btn btn-xs btn-outline-danger" title="Proses Pemberhentian/Pensiun">
+                <i class="bi bi-file-earmark-text"></i> Proses
+              </a>
+              {% else %}
+              <a href="{% url 'dosen_detail' d.pk %}" class="btn btn-xs btn-outline-secondary" title="Lihat Detail">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr><td colspan="9" class="text-center py-4 text-muted">Belum ada dosen yang mencapai BUP</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <small class="text-muted">Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}</small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search }}&fakultas={{ fakultas_id }}">&laquo;</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ search }}&fakultas={{ fakultas_id }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search }}&fakultas={{ fakultas_id }}">&raquo;</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

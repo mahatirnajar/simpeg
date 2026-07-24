@@ -216,6 +216,17 @@
       </a>
     </div>
     {% endif %}
+    <div class="nav-item">
+      <a href="{% url 'naik_pangkat_list' %}" class="{% if request.resolver_match.url_name == 'naik_pangkat_list' %}active{% endif %}">
+        <i class="bi bi-arrow-up-circle-fill"></i> Naik Pangkat
+      </a>
+    </div>
+    <div class="nav-item">
+      <a href="{% url 'dosen_berhenti_list' %}" class="{% if request.resolver_match.url_name == 'dosen_berhenti_list' %}active{% endif %}">
+        <i class="bi bi-person-dash-fill"></i> Dosen Berhenti
+      </a>
+    </div>
+    
 
     <div class="nav-section">Tendik</div>
     <div class="nav-item">
