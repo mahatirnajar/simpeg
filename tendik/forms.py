@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from .models import (
-    Tendik, UnitKerja,
+    KeluargaTendik, RiwayatStatusTendik, Tendik, UnitKerja,
     RiwayatKepangkatanTendik, RiwayatJabatanFungsionalTendik,
     JabatanStrukturalTendik, RiwayatPendidikanTendik,
     TugasTambahanTendik, RiwayatBerhentiTendik,
@@ -242,8 +242,19 @@ class RiwayatKepangkatanTendikForm(forms.ModelForm):
             'golongan':   forms.TextInput({**_INPUT, 'placeholder': 'III/a atau IX (PPPK)'}),
             'tmt':        forms.DateInput(_DATE),
             'keterangan': forms.Textarea(_AREA),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super(RiwayatKepangkatanTendikForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
+        }
+        
 
 class RiwayatJabatanFungsionalTendikForm(forms.ModelForm):
     class Meta:
@@ -256,6 +267,16 @@ class RiwayatJabatanFungsionalTendikForm(forms.ModelForm):
             'tmt':          forms.DateInput(_DATE),
             'angka_kredit': forms.NumberInput({**_NUMBER, 'step': '0.01'}),
             'keterangan':   forms.Textarea(_AREA),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
+        }
+    def __init__(self, *args, **kwargs):
+        super(RiwayatJabatanFungsionalTendikForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
         }
 
 
@@ -273,6 +294,16 @@ class JabatanStrukturalTendikForm(forms.ModelForm):
             'tmt_jabatan': forms.DateInput(_DATE),
             'is_aktif':    forms.CheckboxInput(_CHECK),
             'keterangan':  forms.Textarea(_AREA),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
+        }
+    def __init__(self, *args, **kwargs):
+        super(JabatanStrukturalTendikForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
         }
 
 
@@ -287,6 +318,16 @@ class RiwayatPendidikanTendikForm(forms.ModelForm):
             'fakultas_pt':   forms.TextInput(_INPUT),
             'institusi':     forms.TextInput(_INPUT),
             'tahun_lulus':   forms.NumberInput({**_NUMBER, 'min': 1970, 'max': 2030}),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
+        }
+    def __init__(self, *args, **kwargs):
+        super(JabatanStrukturalTendikForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
         }
 
 
@@ -299,10 +340,19 @@ class TugasTambahanTendikForm(forms.ModelForm):
             'no_sk':       forms.TextInput(_INPUT),
             'tgl_sk':      forms.DateInput(_DATE),
             'tmt_jabatan': forms.DateInput(_DATE),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
             'is_aktif':    forms.CheckboxInput(_CHECK),
             'keterangan':  forms.Textarea(_AREA),
         }
-
+    def __init__(self, *args, **kwargs):
+        super(TugasTambahanTendikForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
+        }
 
 class RiwayatBerhentiTendikForm(forms.ModelForm):
     class Meta:
@@ -350,4 +400,80 @@ class UnitKerjaForm(forms.ModelForm):
         widgets = {
             'kode':  forms.TextInput(_INPUT),
             'nama':  forms.TextInput(_INPUT),
+        }
+
+class RiwayatStatusTendikForm(forms.ModelForm):
+    class Meta:
+        model = RiwayatStatusTendik
+        exclude = ['tendik']
+
+        widgets = {
+            'status': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+
+            'jenis_cuti': forms.Select(attrs={
+                'class': 'form-select', 
+                'id': 'id_jenis_cuti'
+            }),
+
+            'tanggal_mulai': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+
+            'tanggal_akhir': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+
+            'no_sk': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+
+            'dokumen_pendukung': forms.URLInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'https://drive.google.com/...'
+            }),
+
+            'keterangan': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+            
+        }
+    def __init__(self, *args, **kwargs):
+        super(RiwayatStatusTendikForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
+        }
+
+class KeluargaTendikForm(forms.ModelForm):
+    class Meta:
+        model = KeluargaTendik
+        exclude = ['tendik', 'created_at']
+
+        widgets = {
+            'nama': forms.TextInput(attrs={'class': 'form-control'}),
+            'status_hubungan': forms.Select(attrs={'class': 'form-select'}),
+            'tanggal_lahir': forms.DateInput(attrs={
+                'type': 'date', 
+                'class': 'form-control'
+            }),
+            'pekerjaan': forms.TextInput(attrs={'class': 'form-control'}),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(KeluargaTendikForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
         }

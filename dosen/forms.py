@@ -46,6 +46,17 @@ class RiwayatKepangkatanForm(forms.ModelForm):
             'golongan': forms.TextInput(attrs={'class': 'form-control'}),
             'tmt': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'keterangan': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(RiwayatKepangkatanForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
         }
 
 
@@ -58,8 +69,17 @@ class RiwayatJabatanFungsionalForm(forms.ModelForm):
             'tmt': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'angka_kredit': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'keterangan': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
         }
-
+    def __init__(self, *args, **kwargs):
+        super(RiwayatJabatanFungsionalForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
+        }
 
 class RiwayatPendidikanForm(forms.ModelForm):
     class Meta:
@@ -70,6 +90,16 @@ class RiwayatPendidikanForm(forms.ModelForm):
             'bidang_studi': forms.TextInput(attrs={'class': 'form-control'}),
             'institusi': forms.TextInput(attrs={'class': 'form-control'}),
             'tahun_lulus': forms.NumberInput(attrs={'class': 'form-control'}),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
+        }
+    def __init__(self, *args, **kwargs):
+        super(RiwayatPendidikanForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
         }
 
 
@@ -84,6 +114,17 @@ class TugasTambahanForm(forms.ModelForm):
             'tmt_jabatan': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'keterangan': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'is_aktif': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(TugasTambahanForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
         }
 
 
@@ -136,10 +177,25 @@ class RiwayatStatusDosenForm(forms.ModelForm):
                 'class': 'form-control'
             }),
 
+            'dokumen_pendukung': forms.URLInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'https://drive.google.com/...'
+            }),
+
             'keterangan': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3
             }),
+            
+        }
+    def __init__(self, *args, **kwargs):
+        super(RiwayatStatusDosenForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
         }
 
 class KeluargaDosenForm(forms.ModelForm):
@@ -155,4 +211,15 @@ class KeluargaDosenForm(forms.ModelForm):
                 'class': 'form-control'
             }),
             'pekerjaan': forms.TextInput(attrs={'class': 'form-control'}),
+            'dokumen_pendukung': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(KeluargaDosenForm, self).__init__(*args, **kwargs)
+        # Baris ini yang membuat field menjadi wajib diisi pada form
+        self.fields['dokumen_pendukung'].required = True 
+        
+        # Opsional: Menambahkan pesan error kustom jika tidak diisi
+        self.fields['dokumen_pendukung'].error_messages = {
+            'required': 'URL Dokumen pendukung wajib dilampirkan!'
         }

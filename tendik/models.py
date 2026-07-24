@@ -324,8 +324,10 @@ class RiwayatKepangkatanTendik(models.Model):
     pangkat    = models.CharField(max_length=100, blank=True)
     golongan   = models.CharField(max_length=10)
     tmt        = models.DateField()
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
     keterangan = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
 
     class Meta:
         ordering = ['-tmt']
@@ -361,6 +363,7 @@ class RiwayatJabatanFungsionalTendik(models.Model):
     nama_jabatan = models.CharField(max_length=200, blank=True, default='', verbose_name="Nama Jabatan")
     jenjang      = models.CharField(max_length=50, choices=JENJANG_CHOICES, blank=True)
     tmt          = models.DateField()
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
     angka_kredit = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     keterangan   = models.TextField(blank=True)
     created_at   = models.DateTimeField(auto_now_add=True)
@@ -403,6 +406,7 @@ class JabatanStrukturalTendik(models.Model):
     )
     unit_kerja  = models.CharField(max_length=200, blank=True)
     no_sk       = models.CharField(max_length=100, blank=True)
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
     tgl_sk      = models.DateField(null=True, blank=True)
     tmt_jabatan = models.DateField(null=True, blank=True)
     is_aktif    = models.BooleanField(default=True)
@@ -428,6 +432,7 @@ class TugasTambahanTendik(models.Model):
     tgl_sk      = models.DateField(null=True, blank=True)
     tmt_jabatan = models.DateField(null=True, blank=True)
     is_aktif    = models.BooleanField(default=True)
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
     keterangan  = models.TextField(blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
 
@@ -456,6 +461,7 @@ class RiwayatPendidikanTendik(models.Model):
     fakultas_pt   = models.CharField(max_length=200, blank=True, verbose_name="Fakultas PT")
     institusi     = models.CharField(max_length=200, blank=True, verbose_name="Universitas")
     tahun_lulus   = models.IntegerField(null=True, blank=True)
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
 
     class Meta:
         ordering = ['-jenjang']
@@ -476,6 +482,7 @@ class DetailPPPK(models.Model):
     tmt_berkala      = models.DateField(null=True, blank=True, verbose_name="TMT Berkala")
     thn_pengangkatan = models.IntegerField(null=True, blank=True, verbose_name="Tahun Pengangkatan")
     thn_berjalan     = models.IntegerField(null=True, blank=True, verbose_name="Tahun Berjalan Kontrak")
+    
 
     class Meta:
         verbose_name = "Detail PPPK"
@@ -581,6 +588,7 @@ class RiwayatBerhentiTendik(models.Model):
     tanggal          = models.DateField()
     no_sk            = models.CharField(max_length=100, blank=True)
     no_telp_keluarga = models.CharField(max_length=30, blank=True, verbose_name="No. Telp Keluarga")
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
     keterangan       = models.TextField(blank=True)
     created_at       = models.DateTimeField(auto_now_add=True)
 

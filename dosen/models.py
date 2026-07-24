@@ -171,6 +171,8 @@ class RiwayatKepangkatan(models.Model):
     tmt = models.DateField()
     keterangan = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
+
 
     class Meta:
         ordering = ['-tmt']
@@ -186,7 +188,7 @@ class RiwayatJabatanFungsional(models.Model):
     angka_kredit = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     keterangan = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
     class Meta:
         ordering = ['-tmt']
 
@@ -200,6 +202,8 @@ class RiwayatPendidikan(models.Model):
     bidang_studi = models.CharField(max_length=200, blank=True)
     institusi = models.CharField(max_length=200, blank=True)
     tahun_lulus = models.IntegerField(null=True, blank=True)
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
+
 
     class Meta:
         ordering = ['-jenjang']
@@ -217,6 +221,8 @@ class TugasTambahan(models.Model):
     is_aktif = models.BooleanField(default=True)
     keterangan = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
+
 
     class Meta:
         ordering = ['-tmt_jabatan']
@@ -291,6 +297,9 @@ class RiwayatStatusDosen(models.Model):
         blank=True
     )
 
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
+
+
     keterangan = models.TextField(
         blank=True
     )
@@ -313,6 +322,8 @@ class KeluargaDosen(models.Model):
     tanggal_lahir = models.DateField(null=True, blank=True)
     pekerjaan = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    dokumen_pendukung = models.URLField(max_length=500, blank=True, null=True, verbose_name="Dokumen Pendukung (Link)")
+
 
     class Meta:
         ordering = ['status_hubungan', 'tanggal_lahir']
