@@ -460,7 +460,7 @@ def export_excel(request):
         return c
 
     # ── Baris 1: Judul ──────────────────────────────────────────────────────
-    TOTAL_COLS = 34
+    TOTAL_COLS = 33
     ws.merge_cells(f"A1:{get_column_letter(TOTAL_COLS)}1")
     tc = ws["A1"]
     tc.value     = "DATA TENAGA KEPENDIDIKAN UNIVERSITAS TADULAKO"
@@ -483,17 +483,17 @@ def export_excel(request):
         11: ("JAB. STRUKTURAL", 24),
         12: ("ESELON",           9),
         23: ("BAGIAN",          20),
-        24: ("KARPEG",          14),
-        25: ("TMT CPNS",        13),
-        26: ("TMT PNS",         13),
-        27: ("AGAMA",           12),
-        28: ("KEPAKARAN",       22),
-        29: ("IJ. BKN",         10),
-        30: ("IJ. BORANG",      11),
-        31: ("TMP LAHIR",       16),
-        32: ("TGL LAHIR",       13),
-        33: ("USIA",             7),
-        34: ("PENSIUN",          9),
+        # 24: ("KARPEG",          14),
+        24: ("TMT CPNS",        13),
+        25: ("TMT PNS",         13),
+        26: ("AGAMA",           12),
+        27: ("KEPAKARAN",       22),
+        28: ("IJ. BKN",         10),
+        29: ("IJ. BORANG",      11),
+        30: ("TMP LAHIR",       16),
+        31: ("TGL LAHIR",       13),
+        32: ("USIA",             7),
+        33: ("PENSIUN",          9),
     }
     grouped_cols = {
         13: "MK GOL",
@@ -577,7 +577,7 @@ def export_excel(request):
             fmt_date(t.tmt_pensiun),
             t.sisa_masa_kerja_str,
             vd(t.bagian),
-            vd(t.karpeg),
+            # vd(t.karpeg),
             fmt_date(t.tmt_cpns),
             fmt_date(t.tmt_pns),
             vd(t.agama),
